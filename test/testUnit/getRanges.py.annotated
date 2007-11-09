@@ -1,0 +1,28 @@
+def foo():
+    if 1:
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+    else:
+>         pass
+>         pass
+>         pass
+>         pass
+>         pass
+>         pass
+>         pass
+>         pass
+    x = 1
+    x = 1
+    x = 1
+    x = 1
+    if 0:
+>         pass
