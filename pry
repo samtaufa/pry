@@ -1,0 +1,98 @@
+#!/usr/bin/env python2.5
+import sys
+import libpry
+
+def main():
+    from optparse import OptionParser, OptionGroup
+    parser = OptionParser(version="%prog 0.1")
+    parser.add_option("-a", "--annotate",
+                      action="store_true", dest="annotate",
+                      help="Page annotations")
+    parser.add_option("-c", "--clear",
+                      action="store_true", dest="clear",
+                      help="Clear all .pyc and .pyo files in the project base"
+                           " and included paths"
+                    )
+    parser.add_option("-l", "--list",
+                      action="store_true", dest="list",
+                      help="List all tests.")
+    parser.add_option("-r", "--recurse",
+                      action="store_true", dest="recurse", default=False,
+                      help="Recurse through child directories.")
+    parser.add_option("-s", "--stats",
+                      action="store_true", dest="stats",
+                      help="Give coverage stats")
+    parser.add_option("-m", "--benchmark",
+                      action="store", dest="benchmark", type="int", default=0,
+                      help="Number of benchmark iterations.")
+    parser.add_option("-q", "--quiet",
+                      action="store_true", dest="quiet",
+                      help="Quiet")
+    parser.add_option("-v", "--verbose",
+                      action="count", dest="verbose", default=1,
+                      help="Verbose.")
+
+
+    group = OptionGroup(
+                        parser,
+                        "Profiling",
+                        "Generating run profiles for unit tests."
+                    )
+    group.add_option(
+                        "-p", "--profile",
+                        action="store_true", dest="profile",
+                        help="Do a profiling run. Can be used"
+                        " in conjunction with -m to specify multiple runs."
+                    )
+    group.add_option(
+                        "", "--profile-sort",
+                        action="store", dest="profile_sort",
+                        default="time", type="choice",
+                        choices=[
+                            "calls",
+                            "cumulative",
+                            "file",
+                            "module",
+                            "pcalls",
+                            "line",
+                            "name",
+                            "nfl",
+                            "stdname",
+                            "time"
+                        ],
+                        help="Profile result sorting key. "
+                        "See Python documentation for pstats module."
+                    )
+    parser.add_option_group(group)
+
+    (options, args) = parser.parse_args()
+
+    if not args:
+        path, pattern = ".", None
+    elif len(args) == 1:
+        path, pattern = libpry.utils._splitSpec(args[0])
+    else:
+        parser.error("Please pass only one argument.")
+
+    if options.quiet:
+        verbose = 0
+    else:
+        verbose = options.verbose
+    output = libpry.test._Output(verbose)
+
+    r = libpry.RootNode(path, options.recurse)
+    if pattern:
+        r.mark(pattern)
+    r.prune()
+
+    if options.list:
+        r.printStructure()
+        print "Total: %s"%len(r.tests())
+        sys.exit()
+    else:
+        r.run(output)
+        output.final(r)
+    
+
+if __name__ == "__main__":
+    main()

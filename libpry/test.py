@@ -26,6 +26,74 @@ class OK:
     def __init__(self, node, time):
         self.node, self.time = node, time
 
+        #if verbosity == 1:
+        #    print >> fp, "."
+        #elif verbosity == 2:
+        #    print >> fp, "PASS"
+        #elif verbosity == 3:
+        #    print >> fp, "PASS (%.3fs)"%(stop-start)
+
+class _OutputZero:
+    def nodePre(self, node): return ""
+    def nodeError(self, node): return ""
+    def nodePass(self, node): return ""
+    def final(self, node): return ""
+
+
+class _OutputOne:
+    def nodePre(self, node): return ""
+
+    def nodeError(self, node):
+        return "E"
+
+    def nodePass(self, node):
+        return "."
+
+    def final(self, node):
+        return "\n"
+
+
+class _OutputTwo:
+    def nodePre(self, node):
+        return "%s ...\t"%node.fullPath()
+
+    def nodeError(self, node):
+        return "FAIL\n"
+
+    def nodePass(self, node):
+        return "OK\n"
+
+    def final(self, node):
+        return "\n"
+
+
+class _OutputThree(_OutputTwo):
+    pass
+
+
+class _Output:
+    def __init__(self, verbosity, fp=sys.stdout):
+        self.fp = fp
+        if verbosity == 0:
+            self.o = _OutputZero()
+        elif verbosity == 1:
+            self.o = _OutputOne()
+        elif verbosity == 2:
+            self.o = _OutputTwo()
+        elif verbosity == 3:
+            self.o = _OutputThree()
+        else:
+            self.o = _OutputThree()
+
+    def __getattr__(self, attr):
+        meth = getattr(self.o, attr)
+        def printClosure(*args, **kwargs):
+            if self.fp:
+                self.fp.write(meth(*args, **kwargs))
+        return printClosure
+        
+            
+
 
 class _TestBase(tinytree.Tree):
     """
@@ -61,6 +129,23 @@ class _TestBase(tinytree.Tree):
             if isinstance(i, TestNode):
                 lst.append(i)
         return lst
+
+    def hasTests(self):
+        """
+            Does this node have currently selected child tests?
+        """
+        for i in self.preOrder():
+            if isinstance(i, TestNode) and i._selected:
+                return True
+        return False
+
+    def prune(self):
+        """
+            Remove all internal nodes that have no test children.
+        """
+        for i in self.postOrder():
+            if not i.hasTests() and i.parent:
+                i.remove()
 
     def passed(self):
         """
@@ -125,7 +210,7 @@ class _TestBase(tinytree.Tree):
             if i.name:
                 parts = i.fullPathParts()
                 if len(parts) > 1:
-                    print >> outf, "\t"*(len(parts)-1),
+                    print >> outf, "    "*(len(parts)-1),
                 print >> outf, i.name
 
 AUTO = object()
@@ -152,7 +237,7 @@ class TestTree(_TestBase):
             if i.startswith(self._testPrefix):
                 self.addChild(TestWrapper(i, getattr(self, i)))
 
-    def run(self, verbosity, fp=sys.stdout):
+    def run(self, output):
         """
             Run the tests contained in this suite.
         """
@@ -179,7 +264,7 @@ class TestTree(_TestBase):
                     return
                 i.setupState = OK(self, stop-start)
 
-            i.run(verbosity)
+            i.run(output)
 
             if hasattr(self, "tearDown"):
                 try:
@@ -213,28 +298,17 @@ class TestNode(_TestBase):
     def __init__(self, name):
         _TestBase.__init__(self, None, name=name)
 
-    def run(self, verbosity, fp=sys.stdout):
-        if verbosity ==  2:
-            print >> fp, self.fullPath(), "...\t",
+    def run(self, output):
+        output.nodePre(self)
         try:
             start = time.time()
             self()
             stop = time.time()
         except:
             self.runState = Error(self)
-            if verbosity == 1:
-                print >> fp, "E"
-            elif verbosity == 2:
-                print >> fp, "FAIL"
-            elif verbosity == 3:
-                print >> fp, "FAIL"
+            output.nodeError(self)
             return
-        if verbosity == 1:
-            print >> fp, "."
-        elif verbosity == 2:
-            print >> fp, "PASS"
-        elif verbosity == 3:
-            print >> fp, "PASS (%.3fs)"%(stop-start)
+        output.nodePass(self)
         self.runState = OK(self, stop-start)
 
     def __call__(self):
@@ -255,15 +329,17 @@ class FileNode(TestTree):
         modname = filename[:-3]
         TestTree.__init__(self, name=os.path.join(dirname, modname))
         self.dirname, self.filename = dirname, filename
-        module = __import__(modname)
-        if hasattr(module, "tests"):
-            self.addChildrenFromList(module.tests)
+        globs, locs = {}, {}
+        execfile(filename, globs, locs)
+        if "tests" in locs:
+            self.addChildrenFromList(locs["tests"])
 
 
 class DirNode(TestTree):
     def __init__(self, path):
         TestTree.__init__(self, name=None)
         self.path = path
+        self.baseDir = ".."
         self._pre()
         for i in os.listdir("."):
             if fnmatch.fnmatch(i, _TestGlob):
@@ -271,10 +347,15 @@ class DirNode(TestTree):
         self._post()
 
     def _pre(self):
+        self.oldPath = sys.path
+        sys.path = sys.path[:]
+        sys.path.insert(0, ".")
+        sys.path.insert(0, self.baseDir)
         self.oldcwd = os.getcwd()
         os.chdir(self.path)
 
     def _post(self):
+        sys.path = self.oldPath
         os.chdir(self.oldcwd)
 
     def setUpAll(self):
@@ -300,3 +381,5 @@ class RootNode(TestTree):
                 self.addChild(DirNode(i))
         else:
             self.addChild(DirNode(path))
+            
+

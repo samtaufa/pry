@@ -2,6 +2,10 @@ import fnmatch, cStringIO, os
 import pylid
 import libpry
 
+
+zero = libpry.test._Output(0)
+
+
 class TSetupCheckRoot(libpry.TestTree):
     def __init__(self, *args, **kwargs):
         libpry.TestTree.__init__(self, *args, **kwargs)
@@ -100,7 +104,7 @@ class uSetupCheck(pylid.TestCase):
         )
 
     def test_all(self):
-        self.t.run(0)
+        self.t.run(zero)
         v = ['setup_one', 'setup_two', 'test_a', 'teardown_two', 'setup_two',
         'test_b', 'teardown_two', 'teardown_one', 'setup_one', 'setup_three',
         'test_a', 'teardown_three', 'setup_three', 'test_b', 'teardown_three',
@@ -109,7 +113,7 @@ class uSetupCheck(pylid.TestCase):
 
     def test_mark_multi(self):
         self.t.mark("test_a")
-        self.t.run(0)
+        self.t.run(zero)
         v = ['setup_one', 'setup_two', 'test_a', 'teardown_two',
         'teardown_one', 'setup_one', 'setup_three', 'test_a', 'teardown_three',
         'teardown_one']
@@ -117,7 +121,7 @@ class uSetupCheck(pylid.TestCase):
 
     def test_mark_single(self):
         self.t.mark("two.test_a")
-        self.t.run(0)
+        self.t.run(zero)
         v = ['setup_one', 'setup_two', 'test_a', 'teardown_two', 'teardown_one']
         assert self.t.log == v
 
@@ -130,6 +134,28 @@ class uTestTree(pylid.TestCase):
         assert self.t.count() == 5
         assert len(self.t.tests()) == 3
         assert len(self.t.notrun()) == 3
+
+    def test_hasTests(self):
+        assert self.t.hasTests()
+        t  = TSetupCheckRoot()
+        assert not t.hasTests()
+
+    def test_hasTests(self):
+        assert self.t.hasTests()
+        t  = TSetupCheckRoot()
+        assert not t.hasTests()
+
+    def test_prune(self):
+        t = TSetupCheckRoot(
+                [
+                    TSetupCheckRoot()
+                ]
+            )
+        t.prune()
+        assert t.count() == 1
+        c = self.t.count()
+        self.t.prune()
+        assert self.t.count() == c
 
     def test_printStructure(self):
         s = cStringIO.StringIO()
@@ -154,7 +180,7 @@ class uTestTree(pylid.TestCase):
         assert len(selected) == 0
 
     def test_run(self):
-        self.t.run(0)
+        self.t.run(zero)
         assert len(self.t.passed()) == 1
         assert len(self.t.notrun()) == 0
         assert isinstance(self.t.children[0].setupState, libpry.OK)
@@ -162,7 +188,7 @@ class uTestTree(pylid.TestCase):
 
     def test_run_marked(self):
         self.t.mark("sub")
-        self.t.run(0)
+        self.t.run(zero)
         assert len(self.t.passed()) == 0
 
     def test_getitem(self):
@@ -172,13 +198,13 @@ class uTestTree(pylid.TestCase):
 
     def test_setupFailure(self):
         t = TSetupFailure()
-        t.run(0)
+        t.run(zero)
         assert isinstance(t.children[0].setupState, libpry.Error)
         assert len(t.notrun()) == 1
 
     def test_setupFailure(self):
         t = TTeardownFailure()
-        t.run(0)
+        t.run(zero)
         assert isinstance(t.children[0].teardownState, libpry.Error)
         assert len(t.notrun()) == 0
 
@@ -228,7 +254,7 @@ class uTestTree(pylid.TestCase):
                     TSetupAllCheck()
                 ]
             )
-        t.run(0)
+        t.run(zero)
         expected = [
                      'setupAll', 'setUp',
                      'test_a', 'tearDown',
@@ -243,7 +269,7 @@ class uTestTree(pylid.TestCase):
                     TTeardownAllCheck()
                 ]
             )
-        t.run(0)
+        t.run(zero)
         expected = [
                      'setUp', 'test_a','tearDown',
                      'setUp', 'test_b', 'tearDown',
@@ -265,7 +291,7 @@ class uDirNode(pylid.TestCase):
 
     def test_run(self):
         self.d = libpry.DirNode("testmodule")
-        self.d.run(0)
+        self.d.run(zero)
 
 
 class uRootNode(pylid.TestCase):
@@ -280,61 +306,88 @@ class uRootNode(pylid.TestCase):
         assert not r.search("testmodule/two/test_two")
         assert r.search("test_one")
 
+        
 
 class uTestNode(pylid.TestCase):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
-        x.run(0)
+        x.run(zero)
         assert isinstance(x.runState, libpry.Error)
         str(x.runState)
 
     def test_run_pass(self):
         t = TTree()
         x = t.search("test_pass")[0]
-        x.run(0)
+        x.run(zero)
         assert isinstance(x.runState, libpry.OK)
 
     def test_call(self):
         t = libpry.TestNode("name")
         self.failUnlessRaises(NotImplementedError, t)
 
-    def test_verbosity0(self):
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", lambda: None)
-        n.run(0, s)
-        assert not s.getvalue()
 
-    def test_verbosity1(self):
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", errFunc)
-        n.run(1, s)
-        assert "E" in s.getvalue()
+class uOutput(pylid.TestCase):
+    def setUp(self):
+        self.t = TTree()
+        self.node = self.t.search("test_pass")[0]
+        self.s = cStringIO.StringIO()
 
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", lambda: None)
-        n.run(1, s)
-        assert "." in s.getvalue()
+    def test_zero(self):
+        o = libpry.test._OutputZero()
+        assert not o.nodePre(self.node)
+        assert not o.nodeError(self.node)
 
-    def test_verbosity2(self):
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", errFunc)
-        n.run(2, s)
-        assert "FAIL" in s.getvalue()
+    def test_one(self):
+        o = libpry.test._OutputOne()
+        assert o.nodeError(self.node) == "E"
 
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", lambda: None)
-        n.run(2, s)
-        assert "PASS" in s.getvalue()
+    def test_two(self):
+        o = libpry.test._OutputTwo()
+        assert "test_pass" in o.nodePre(self.node)
+        assert o.nodeError(self.node) == "FAIL\n"
 
-    def test_verbosity3(self):
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", errFunc)
-        n.run(3, s)
-        assert "FAIL" in s.getvalue()
+    def test_three(self):
+        o = libpry.test._OutputThree()
+        assert "test_pass" in o.nodePre(self.node)
+        assert o.nodeError(self.node) == "FAIL\n"
 
-        s = cStringIO.StringIO()
-        n = libpry.TestWrapper("myname", lambda: None)
-        n.run(3, s)
-        assert "PASS" in s.getvalue()
-        assert "s)" in s.getvalue()
+#    def test_verbosity0(self):
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", lambda: None)
+#        n.run(0, s)
+#        assert not s.getvalue()
+#
+#    def test_verbosity1(self):
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", errFunc)
+#        n.run(1, s)
+#        assert "E" in s.getvalue()
+#
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", lambda: None)
+#        n.run(1, s)
+#        assert "." in s.getvalue()
+#
+#    def test_verbosity2(self):
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", errFunc)
+#        n.run(2, s)
+#        assert "FAIL" in s.getvalue()
+#
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", lambda: None)
+#        n.run(2, s)
+#        assert "PASS" in s.getvalue()
+#
+#    def test_verbosity3(self):
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", errFunc)
+#        n.run(3, s)
+#        assert "FAIL" in s.getvalue()
+#
+#        s = cStringIO.StringIO()
+#        n = libpry.TestWrapper("myname", lambda: None)
+#        n.run(3, s)
+#        assert "PASS" in s.getvalue()
+#        assert "s)" in s.getvalue()
