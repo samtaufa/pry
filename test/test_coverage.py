@@ -4,11 +4,6 @@ import libpry
 import libpry.coverage
 import testUnit
 
-TERM = token.NT_OFFSET - 1
-NONTERM = token.NT_OFFSET
-
-# The tests below rely on the fact that .pyc files are not created for the
-# files in testUnit.
 class uCoverage(libpry.TestTree):
     def setUp(self):
         self.cov = libpry.coverage.Coverage("./testUnit")
@@ -96,7 +91,6 @@ class uCoverage(libpry.TestTree):
                     }
         assert self.cov.statementsNotRun == expected
 
-
     def test_matching(self):
         """
             Tests that the results of the traced running matches up with the
@@ -116,21 +110,20 @@ class uCoverage(libpry.TestTree):
         testUnit.getStats.foo()
         testUnit.getRanges.foo()
         self.cov.stop()
-
         expected = [
-                        (os.path.abspath("./testUnit/getStats.py"), {
-                                                    "allStatements": 4,
-                                                    "statementsRun": 3,
-                                                    "coverage": 75.0,
-                                                    "ranges": [5],
-                                                }),
-                        (os.path.abspath("./testUnit/getRanges.py"), {
-                                                    "allStatements": 12,
-                                                    "statementsRun":9,
-                                                    "coverage": 75.0,
-                                                    "ranges": [6, 9, 14],
-                                                })
-                    ]
+                (os.path.abspath("./testUnit/getStats.py"), {
+                                            "allStatements": 4,
+                                            "statementsRun": 3,
+                                            "coverage": 75.0,
+                                            "ranges": [5],
+                                        }),
+                (os.path.abspath("./testUnit/getRanges.py"), {
+                                            "allStatements": 12,
+                                            "statementsRun":9,
+                                            "coverage": 75.0,
+                                            "ranges": [6, 9, 14],
+                                        })
+        ]
         assert self.cov.getStats() == expected
 
     def test_getGlobalStats2(self):

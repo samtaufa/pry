@@ -21,12 +21,14 @@ class Error:
     def __init__(self, node, msg):
         self.node, self.msg = node, msg
         self.exctype, self.excvalue, self.tb = sys.exc_info()
+        # Expunge libpry from the traceback
         while "libpry" in self.tb.tb_frame.f_code.co_filename:
             next = self.tb.tb_next
             if next:
                 self.tb = next
             else:
                 break
+        # We lose information if we call format_exception in __str__
         self.s = traceback.format_exception(
                 self.exctype, self.excvalue, self.tb
             )
@@ -76,10 +78,10 @@ class _OutputOne:
             errs = root.allError()
             if errs:
                 infostr.append ("fail: %s"%len(errs))
-
             if infostr:
                 infostr = "(%s)"%"".join(infostr)
-
+            else:
+                infostr = ""
             lst.append(
                 "%s tests %s - %.3fs\n"%(
                     len(root.tests()),
@@ -494,4 +496,3 @@ class RootNode(TestTree):
                 self.addChild(DirNode(i))
         else:
             self.addChild(DirNode(path))
-
