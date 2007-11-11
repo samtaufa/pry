@@ -20,14 +20,23 @@ class Error:
     """
     def __init__(self, node, msg):
         self.node, self.msg = node, msg
-        self.exc = sys.exc_info()
+        self.exctype, self.excvalue, self.tb = sys.exc_info()
+        while "libpry" in self.tb.tb_frame.f_code.co_filename:
+            next = self.tb.tb_next
+            if next:
+                self.tb = next
+            else:
+                break
+        self.s = traceback.format_exception(
+                self.exctype, self.excvalue, self.tb
+            )
 
     def __str__(self):
         strs = [
-                 "Error: %s"%self.msg,
-                 self.node.fullPath()
+                 "Error in %s:"%self.msg,
+                 "    %s"%self.node.fullPath()
                ]
-        for i in traceback.format_exception(*self.exc):
+        for i in self.s:
             strs.append("    %s"%i.rstrip())
         strs.append("\n")
         return "\n".join(strs)
@@ -58,13 +67,13 @@ class _OutputOne:
         return "."
 
     def final(self, root):
-        lst = ["\n\n"]
+        lst = ["\n"]
         for i in root.preOrder():
             if i.isError():
                 lst.append(str(i.getError()))
-
-        print root.runState.time
-
+        lst.append(
+            "%s tests - %.3fs\n"%(len(root.tests()), root.runState.time)
+        )
         return "".join(lst)
 
 
@@ -130,27 +139,29 @@ class _TestBase(tinytree.Tree):
     def __setitem__(self, key, value):
         self._ns[key] = value
 
-    def _run(self, dstObj, meth):
+    def _run(self, srcObj, dstObj, meth, *args, **kwargs):
         """
             Utility method that runs a callable, and returns a State object.
             
+            srcObj:     The object from which to source the method
             dstObj:     The object on which to set the state variable
             meth:       The name of the method to call
         """
-        if meth == "run":
+        if meth == "__call__":
             c = self
+            meth = "call"
         else:
-            c = getattr(self, meth, None)
+            c = getattr(srcObj, meth, None)
         if not c:
             return None
         try:
             start = time.time()
-            c()
+            c(*args, **kwargs)
             stop = time.time()
-        except:
-            setattr(dstObj, meth + "State", Error(self, meth))
+        except Exception, e:
+            setattr(dstObj, meth + "State", Error(srcObj, meth))
             raise Skip()
-        setattr(dstObj, meth + "State", OK(self, stop-start))
+        setattr(dstObj, meth + "State", OK(srcObj, stop-start))
 
     def tests(self):
         """
@@ -311,6 +322,9 @@ class TestTree(_TestBase):
     # An OK object if teardownAll succeeded, an Error object if it failed, and
     # None if no tearDown was run.
     tearDownAllState = None
+    # An OK object if run succeeded, an Error object if it failed. For a
+    # TestTree object, this should never be an error.
+    runState = None
     def __init__(self, children=None, name=AUTO):
         if self.name:
             name = self.name
@@ -329,27 +343,29 @@ class TestTree(_TestBase):
                     self.tearDownAllState,
                     self.setUpState,
                     self.tearDownState,
+                    self.runState,
                 ]
 
     def run(self, output):
         """
             Run the tests contained in this suite.
         """
-        self._run(self, "setUpAll")
+        self._run(self, self, "setUpAll")
         for i in self.children:
-            self._run(i, "setUp")
+            self._run(self, i, "setUp")
             try:
-                i.run(output)
+                self._run(i, self, "run", output)
             except Skip:
+                output.nodeError(i)
                 return
-            self._run(i, "tearDown")
-        self._run(self, "tearDownAll")
+            self._run(self, i, "tearDown")
+        self._run(self, self, "tearDownAll")
 
 
 class TestNode(_TestBase):
     # An OK object if run succeeded, an Error object if it failed, and None
     # if the test was not run.
-    runState = None
+    callState = None
     # An OK object if setUp succeeded, an Error object if it failed, and None
     # if no setUp was run.
     setUpState = None
@@ -362,8 +378,9 @@ class TestNode(_TestBase):
     def run(self, output):
         output.nodePre(self)
         try:
-            self._run(self, "run")
+            self._run(self, self, "__call__")
         except Skip:
+            output.nodeError(self)
             return
         output.nodePass(self)
 
@@ -371,7 +388,7 @@ class TestNode(_TestBase):
         return [
                     self.setUpState,
                     self.tearDownState,
-                    self.runState,
+                    self.callState,
                 ]
 
     def __call__(self):
@@ -386,26 +403,39 @@ class TestWrapper(TestNode):
     def __call__(self):
         self.meth()
 
+    def __repr__(self):
+        return "TestWrapper: %s"%self.name
+
 
 class FileNode(TestTree):
     def __init__(self, dirname, filename):
         modname = filename[:-3]
         TestTree.__init__(self, name=os.path.join(dirname, modname))
         self.dirname, self.filename = dirname, filename
-        globs, locs = {}, {}
         m = __import__(modname)
+        # Force a reload to avoid Python caching modules that happen to have 
+        # the same name
+        reload(m)
         if hasattr(m, "tests"):
             self.addChildrenFromList(m.tests)
+
+    def __repr__(self):
+        return "FileNode: %s"%self.filename
 
 
 class DirNode(TestTree):
     def __init__(self, path):
         TestTree.__init__(self, name=None)
-        self.path = path
+        if os.path.isdir(path):
+            self.dirPath = path
+            glob = _TestGlob
+        elif os.path.isfile(path):
+            self.dirPath = os.path.dirname(path)
+            glob = os.path.basename(path)
         self.baseDir = ".."
         self._pre()
         for i in os.listdir("."):
-            if fnmatch.fnmatch(i, _TestGlob):
+            if fnmatch.fnmatch(i, glob):
                 self.addChild(FileNode(path, i))
         self._post()
 
@@ -415,7 +445,7 @@ class DirNode(TestTree):
         sys.path.insert(0, ".")
         sys.path.insert(0, self.baseDir)
         self.oldcwd = os.getcwd()
-        os.chdir(self.path)
+        os.chdir(self.dirPath)
 
     def _post(self):
         sys.path = self.oldPath
@@ -426,6 +456,9 @@ class DirNode(TestTree):
 
     def tearDownAll(self):
         self._post()
+
+    def __repr__(self):
+        return "DirNode: %s"%self.dirPath
 
 
 class RootNode(TestTree):
@@ -444,3 +477,4 @@ class RootNode(TestTree):
                 self.addChild(DirNode(i))
         else:
             self.addChild(DirNode(path))
+

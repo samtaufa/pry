@@ -361,14 +361,14 @@ class uTestNode(pylid.TestCase):
         t = TTree()
         x = t.search("test_fail")[0]
         x.run(zero)
-        assert isinstance(x.runState, libpry.Error)
-        str(x.runState)
+        assert isinstance(x.callState, libpry.Error)
+        str(x.callState)
 
     def test_run_pass(self):
         t = TTree()
         x = t.search("test_pass")[0]
         x.run(zero)
-        assert isinstance(x.runState, libpry.OK)
+        assert isinstance(x.callState, libpry.OK)
 
     def test_call(self):
         t = libpry.TestNode("name")

@@ -55,4 +55,6 @@ def _splitSpec(spec):
     else:
         target = ""
         pattern = ".".join(parts)
+    if target and pattern == "py":
+        pattern = ""
     return target, pattern

@@ -37,6 +37,10 @@ class u_splitSpec(libpry.TestTree):
                     libpry.utils._splitSpec("testmodule/dir.one/test_a.pattern") ==\
                     ('testmodule/dir.one/test_a.py', "pattern")
                 )
+        assert (
+                    libpry.utils._splitSpec("testmodule/test_a.py") ==\
+                    ('testmodule/test_a.py', "")
+                )
 
 
 tests = [

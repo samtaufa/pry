@@ -11,7 +11,7 @@ def main():
     parser.add_option("-c", "--clear",
                       action="store_true", dest="clear",
                       help="Clear all .pyc and .pyo files in the project base"
-                           " and included paths"
+                           " and included paths before run."
                     )
     parser.add_option("-l", "--list",
                       action="store_true", dest="list",
@@ -31,7 +31,12 @@ def main():
     parser.add_option("-v", "--verbose",
                       action="count", dest="verbose", default=1,
                       help="Verbose.")
-
+    parser.add_option(
+                        "--debug-dump",
+                        action="store_true", dest="debug",
+                        help="For debugging only. Like list,"
+                           "but dump the full tree structure."
+                    )
 
     group = OptionGroup(
                         parser,
@@ -87,6 +92,10 @@ def main():
 
     if options.list:
         r.printStructure()
+        print "Total: %s"%len(r.tests())
+        sys.exit()
+    elif options.debug:
+        r.dump()
         print "Total: %s"%len(r.tests())
         sys.exit()
     else:
