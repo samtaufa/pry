@@ -1,6 +1,6 @@
 import os.path, sys, pprint
 import token, symbol
-import pylid
+import libpry
 import libpry.coverage
 import testUnit
 
@@ -9,7 +9,7 @@ NONTERM = token.NT_OFFSET
 
 # The tests below rely on the fact that .pyc files are not created for the
 # files in testUnit.
-class uCoverage(pylid.TestCase):
+class uCoverage(libpry.TestTree):
     def setUp(self):
         self.cov = libpry.coverage.Coverage("./testUnit")
 
@@ -20,7 +20,7 @@ class uCoverage(pylid.TestCase):
         self.cov.stop()
         self.cov._integrateTrace()
         linesrun = self.cov.linesRun[os.path.abspath("./testUnit/mymod.py")]
-        self.failUnlessEqual(linesrun, set([3, 4, 5, 8, 12]))
+        assert linesrun == set([3, 4, 5, 8, 12])
 
     def test_docstrings(self):
         self.cov.start()
@@ -30,7 +30,7 @@ class uCoverage(pylid.TestCase):
         self.cov._makeCoverage()
         self.cov._integrateTrace()
         pth = os.path.abspath("./testUnit/docstrings.py")
-        self.failIf(self.cov.statementsNotRun[pth])
+        assert not self.cov.statementsNotRun[pth]
 
     def test_coveragePath(self):
         """
@@ -41,12 +41,10 @@ class uCoverage(pylid.TestCase):
         testUnit.mymod.coveragePath()
         self.cov.stop()
         self.cov._integrateTrace()
-        self.failUnless(len(self.cov.linesRun) <= 2)
-        self.failUnless(
-            self.cov.linesRun.has_key(
+        assert len(self.cov.linesRun) <= 2
+        assert self.cov.linesRun.has_key(
                 os.path.abspath("./testUnit/mymod.py")
             )
-        )
 
     def test_excludePath(self):
         mycov = libpry.coverage.Coverage("./testUnit", ["./testUnit/mymod2.py"])
@@ -56,10 +54,10 @@ class uCoverage(pylid.TestCase):
         testUnit.mymod2.coveragePath()
         mycov.stop()
         mycov._makeCoverage()
-        self.failUnlessEqual(len(mycov.linesRun), 1)
-        self.failUnless(mycov.linesRun.has_key(os.path.abspath("./testUnit/mymod.py")))
-        self.failUnlessEqual(len(mycov.allStatements), 1)
-        self.failUnless(mycov.allStatements.has_key(os.path.abspath("./testUnit/mymod.py")))
+        assert len(mycov.linesRun) == 1
+        assert mycov.linesRun.has_key(os.path.abspath("./testUnit/mymod.py"))
+        assert len(mycov.allStatements) == 1
+        assert mycov.allStatements.has_key(os.path.abspath("./testUnit/mymod.py"))
 
     def test_makeCoverage(self):
         self.cov.start()
@@ -68,9 +66,9 @@ class uCoverage(pylid.TestCase):
         self.cov.stop()
         self.cov._makeCoverage()
         expected = {
-                        os.path.abspath("./testUnit/makeCoverage.py"): [6, 12, 17, 18, 22],
-                    }
-        self.failUnlessEqual(self.cov.statementsNotRun, expected)
+            os.path.abspath("./testUnit/makeCoverage.py"): [6, 12, 17, 18, 22],
+        }
+        assert self.cov.statementsNotRun == expected
 
     def test_makeCoverageReentry(self):
         import testUnit.makeCoverageReentry2
@@ -83,7 +81,7 @@ class uCoverage(pylid.TestCase):
 
         self.cov._makeCoverage()
         expected = {os.path.abspath("./testUnit/makeCoverageReentry.py"): []}
-        self.failUnlessEqual(self.cov.statementsNotRun, expected)
+        assert self.cov.statementsNotRun == expected
 
         self.cov.start()
         import testUnit.makeCoverageReentry2
@@ -96,7 +94,7 @@ class uCoverage(pylid.TestCase):
                         os.path.abspath("./testUnit/makeCoverageReentry2.py"): [3, 4]
                         
                     }
-        self.failUnlessEqual(self.cov.statementsNotRun, expected)
+        assert self.cov.statementsNotRun == expected
 
 
     def test_matching(self):
@@ -110,7 +108,7 @@ class uCoverage(pylid.TestCase):
         testUnit.matching.foo(0)
         self.cov.stop()
         self.cov._makeCoverage()
-        self.failUnlessEqual(self.cov.statementsRun, self.cov.allStatements)
+        assert self.cov.statementsRun == self.cov.allStatements
 
     def test_getStats(self):
         self.cov.start()
@@ -133,7 +131,7 @@ class uCoverage(pylid.TestCase):
                                                     "ranges": [6, 9, 14],
                                                 })
                     ]
-        self.failUnlessEqual(self.cov.getStats(), expected)
+        assert self.cov.getStats() == expected
 
     def test_getGlobalStats2(self):
         """
@@ -156,7 +154,7 @@ class uCoverage(pylid.TestCase):
                         'allStatements': 4
                     }
         x = self.cov.getGlobalStats()
-        self.failUnlessEqual(x, expected)
+        assert x == expected
 
     def _test_getRanges(self):
         self.cov.start()
@@ -166,7 +164,7 @@ class uCoverage(pylid.TestCase):
         expected = {
                        "./testUnit/getRanges.py": [(15, 22), 28, (34, 39)]
                     }
-        self.failUnlessEqual(self.cov.getRanges(), expected)
+        assert self.cov.getRanges() == expected
 
     def test_getAnnotation(self):
         self.cov.start()
@@ -175,7 +173,11 @@ class uCoverage(pylid.TestCase):
         self.cov.stop()
         ann = self.cov.getAnnotation()
         annotatedFile = open("./testUnit/getAnnotation.py.annotated").readlines()
-        self.failUnlessEqual(len(ann), 1)
-        self.failUnlessEqual(
-            ann[os.path.abspath("./testUnit/getAnnotation.py")], annotatedFile
-        )
+        assert len(ann) == 1
+        
+        x = ann[os.path.abspath("./testUnit/getAnnotation.py")]
+        assert x == annotatedFile
+
+tests = [
+    uCoverage()
+]

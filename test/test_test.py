@@ -1,5 +1,4 @@
 import fnmatch, cStringIO, os
-import pylid
 import libpry
 
 
@@ -102,7 +101,7 @@ class TTeardownFailure(libpry.TestTree):
     def test_pass(self): pass
 
 
-class uSetupCheck(pylid.TestCase):
+class uSetupCheck(libpry.TestTree):
     def setUp(self):
         self.t =  TSetupCheckRoot(
             [
@@ -138,7 +137,7 @@ class uSetupCheck(pylid.TestCase):
         assert self.t.log == v
 
 
-class uTestTree(pylid.TestCase):
+class uTestTree(libpry.TestTree):
     def setUp(self):
         self.t = TTree()
 
@@ -209,7 +208,7 @@ class uTestTree(pylid.TestCase):
     def test_getitem(self):
         n = self.t.search("test_pass")[0]
         assert n["item"] == "data"
-        self.failUnlessRaises(KeyError, n.__getitem__, "nonexistent")
+        libpry.raises(KeyError, n.__getitem__, "nonexistent")
 
     def test_setupFailure(self):
         t = TSetupFailure()
@@ -220,7 +219,7 @@ class uTestTree(pylid.TestCase):
 
     def test_setupFailure(self):
         t = TTeardownFailure()
-        self.assertRaises(libpry.Skip, t.run, zero)
+        libpry.raises(libpry.Skip, t.run, zero)
         assert isinstance(t.children[0].tearDownState, libpry.Error)
         assert len(t.allNotRun()) == 0
 
@@ -307,7 +306,7 @@ class uTestTree(pylid.TestCase):
                 ]
             )
         x = t.children[0]
-        self.failWith("no error for this node", x.getError)
+        libpry.raises("no error for this node", x.getError)
         t.run(zero)
         assert x.getError()
 
@@ -326,7 +325,7 @@ class uTestTree(pylid.TestCase):
         assert t.log == expected
 
 
-class uDirNode(pylid.TestCase):
+class uDirNode(libpry.TestTree):
     def setUp(self):
         self.cwd = os.getcwd()
 
@@ -342,7 +341,7 @@ class uDirNode(pylid.TestCase):
         self.d.run(zero)
 
 
-class uRootNode(pylid.TestCase):
+class uRootNode(libpry.TestTree):
     def test_init(self):
         r = libpry.RootNode("testmodule", True)
         assert r.search("test_one")
@@ -356,7 +355,7 @@ class uRootNode(pylid.TestCase):
 
         
 
-class uTestNode(pylid.TestCase):
+class uTestNode(libpry.TestTree):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
@@ -372,10 +371,10 @@ class uTestNode(pylid.TestCase):
 
     def test_call(self):
         t = libpry.TestNode("name")
-        self.failUnlessRaises(NotImplementedError, t)
+        libpry.raises(NotImplementedError, t)
 
 
-class uOutput(pylid.TestCase):
+class uOutput(libpry.TestTree):
     def setUp(self):
         self.t = TTree()
         self.node = self.t.search("test_pass")[0]
@@ -399,3 +398,14 @@ class uOutput(pylid.TestCase):
         o = libpry.test._OutputThree()
         assert "test_pass" in o.nodePre(self.node)
         assert o.nodeError(self.node) == "FAIL\n"
+
+tests = [
+    uSetupCheck(),
+    uOutput(),
+    uTestNode(),
+    uRootNode(),
+    uDirNode(),
+    uTestTree(),
+
+
+]

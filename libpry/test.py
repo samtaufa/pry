@@ -71,9 +71,26 @@ class _OutputOne:
         for i in root.preOrder():
             if i.isError():
                 lst.append(str(i.getError()))
-        lst.append(
-            "%s tests - %.3fs\n"%(len(root.tests()), root.runState.time)
-        )
+        if root.runState:
+            infostr = []
+            errs = root.allError()
+            if errs:
+                infostr.append ("fail: %s"%len(errs))
+
+            if infostr:
+                infostr = "(%s)"%"".join(infostr)
+
+            lst.append(
+                "%s tests %s - %.3fs\n"%(
+                    len(root.tests()),
+                    infostr,
+                    root.runState.time
+                )
+            )
+        else:
+            lst.append(
+                "No tests run.\n"
+            )
         return "".join(lst)
 
 
@@ -430,7 +447,7 @@ class DirNode(TestTree):
             self.dirPath = path
             glob = _TestGlob
         elif os.path.isfile(path):
-            self.dirPath = os.path.dirname(path)
+            self.dirPath = os.path.dirname(path) or "."
             glob = os.path.basename(path)
         self.baseDir = ".."
         self._pre()
