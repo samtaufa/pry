@@ -10,28 +10,36 @@ import coverage
 
 _TestGlob = "test_*.py"
 
+
+class Skip(Exception): pass
+
+
 class Error:
-    def __init__(self, node):
-        self.node = node
+    """
+        Error tests False.
+    """
+    def __init__(self, node, msg):
+        self.node, self.msg = node, msg
         self.exc = sys.exc_info()
 
     def __str__(self):
-        strs = [ self.node.fullPath() ]
+        strs = [
+                 "Error: %s"%self.msg,
+                 self.node.fullPath()
+               ]
         for i in traceback.format_exception(*self.exc):
             strs.append("    %s"%i.rstrip())
+        strs.append("\n")
         return "\n".join(strs)
 
 
 class OK:
+    """
+       OK tests True.
+    """
     def __init__(self, node, time):
         self.node, self.time = node, time
 
-        #if verbosity == 1:
-        #    print >> fp, "."
-        #elif verbosity == 2:
-        #    print >> fp, "PASS"
-        #elif verbosity == 3:
-        #    print >> fp, "PASS (%.3fs)"%(stop-start)
 
 class _OutputZero:
     def nodePre(self, node): return ""
@@ -49,11 +57,18 @@ class _OutputOne:
     def nodePass(self, node):
         return "."
 
-    def final(self, node):
-        return "\n"
+    def final(self, root):
+        lst = ["\n\n"]
+        for i in root.preOrder():
+            if i.isError():
+                lst.append(str(i.getError()))
+
+        print root.runState.time
+
+        return "".join(lst)
 
 
-class _OutputTwo:
+class _OutputTwo(_OutputOne):
     def nodePre(self, node):
         return "%s ...\t"%node.fullPath()
 
@@ -62,9 +77,6 @@ class _OutputTwo:
 
     def nodePass(self, node):
         return "OK\n"
-
-    def final(self, node):
-        return "\n"
 
 
 class _OutputThree(_OutputTwo):
@@ -91,8 +103,6 @@ class _Output:
             if self.fp:
                 self.fp.write(meth(*args, **kwargs))
         return printClosure
-        
-            
 
 
 class _TestBase(tinytree.Tree):
@@ -119,6 +129,28 @@ class _TestBase(tinytree.Tree):
 
     def __setitem__(self, key, value):
         self._ns[key] = value
+
+    def _run(self, dstObj, meth):
+        """
+            Utility method that runs a callable, and returns a State object.
+            
+            dstObj:     The object on which to set the state variable
+            meth:       The name of the method to call
+        """
+        if meth == "run":
+            c = self
+        else:
+            c = getattr(self, meth, None)
+        if not c:
+            return None
+        try:
+            start = time.time()
+            c()
+            stop = time.time()
+        except:
+            setattr(dstObj, meth + "State", Error(self, meth))
+            raise Skip()
+        setattr(dstObj, meth + "State", OK(self, stop-start))
 
     def tests(self):
         """
@@ -147,17 +179,59 @@ class _TestBase(tinytree.Tree):
             if not i.hasTests() and i.parent:
                 i.remove()
 
-    def passed(self):
+    def allError(self):
+        """
+            All test nodes that errored.
+        """
+        return [i for i in self.tests() if i.isError()]
+
+    def allPassed(self):
         """
             All test nodes that passed.
         """
-        return [i for i in self.tests() if isinstance(i.runState, OK)]
+        return [i for i in self.tests() if i.isPassed()]
 
-    def notrun(self):
+    def allNotRun(self):
         """
             All test nodes that that have not been run.
         """
-        return [i for i in self.tests() if i.runState is None]
+        return [i for i in self.tests() if i.isNotRun()]
+
+    def isError(self):
+        """
+            True if this node has experienced a test failure.
+        """
+        for i in self._states():
+            if isinstance(i, Error):
+                return True
+        return False
+
+    def getError(self):
+        """
+            Return the Error object for this node. Raises an exception if there
+            is none.
+        """
+        for i in self._states():
+            if isinstance(i, Error):
+                return i
+        raise ValueError, "No error for this node."
+
+    def isNotRun(self):
+        """
+            True if this node has experienced a test failure.
+        """
+        for i in self._states():
+            if not i is None:
+                return False
+        return True
+
+    def isPassed(self):
+        """
+            True if this node has passed.
+        """
+        if (not self.isError()) and (not self.isNotRun()):
+            return True
+        return False
 
     def fullPathParts(self):
         """
@@ -225,6 +299,18 @@ class TestTree(_TestBase):
     _exclude = None
     _include = None
     name = None
+    # An OK object if setUp succeeded, an Error object if it failed, and None
+    # if no setUp was run.
+    setUpState = None
+    # An OK object if tearDown succeeded, an Error object if it failed, and None
+    # if no tearDown was run.
+    tearDownState = None
+    # An OK object if setupAll succeeded, an Error object if it failed, and None
+    # if no tearDown was run.
+    setUpAllState = None
+    # An OK object if teardownAll succeeded, an Error object if it failed, and
+    # None if no tearDown was run.
+    tearDownAllState = None
     def __init__(self, children=None, name=AUTO):
         if self.name:
             name = self.name
@@ -237,79 +323,56 @@ class TestTree(_TestBase):
             if i.startswith(self._testPrefix):
                 self.addChild(TestWrapper(i, getattr(self, i)))
 
+    def _states(self):
+        return [
+                    self.setUpAllState,
+                    self.tearDownAllState,
+                    self.setUpState,
+                    self.tearDownState,
+                ]
+
     def run(self, output):
         """
             Run the tests contained in this suite.
         """
-        if hasattr(self, "setUpAll"):
-            try:
-                start = time.time()
-                self.setUpAll()
-                stop = time.time()
-            except:
-                self.setupAllState = Error(self)
-                return
-            self.setupAllState = OK(self, stop-start)
-
+        self._run(self, "setUpAll")
         for i in self.children:
-            if not i._selected:
-                continue
-            if hasattr(self, "setUp"):
-                try:
-                    start = time.time()
-                    self.setUp()
-                    stop = time.time()
-                except:
-                    i.setupState = Error(self)
-                    return
-                i.setupState = OK(self, stop-start)
-
-            i.run(output)
-
-            if hasattr(self, "tearDown"):
-                try:
-                    start = time.time()
-                    self.tearDown()
-                    stop = time.time()
-                except:
-                    i.teardownState = Error(self)
-                    return
-                i.teardownState = OK(self, stop-start)
-
-        if hasattr(self, "tearDownAll"):
+            self._run(i, "setUp")
             try:
-                start = time.time()
-                self.tearDownAll()
-                stop = time.time()
-            except:
-                self.teardownAllState = Error(self)
+                i.run(output)
+            except Skip:
                 return
-            self.teardownAllState = OK(self, stop-start)
+            self._run(i, "tearDown")
+        self._run(self, "tearDownAll")
 
 
 class TestNode(_TestBase):
-    # The state of the last run for this test.
-    # After a run is complete, this is either an OK or Error
+    # An OK object if run succeeded, an Error object if it failed, and None
+    # if the test was not run.
     runState = None
-    setupState = None
-    teardownState = None
-    setupAllState = None
-    teardownAllState = None
+    # An OK object if setUp succeeded, an Error object if it failed, and None
+    # if no setUp was run.
+    setUpState = None
+    # An OK object if setUp succeeded, an Error object if it failed, and None
+    # if no tearDown was run.
+    tearDownState = None
     def __init__(self, name):
         _TestBase.__init__(self, None, name=name)
 
     def run(self, output):
         output.nodePre(self)
         try:
-            start = time.time()
-            self()
-            stop = time.time()
-        except:
-            self.runState = Error(self)
-            output.nodeError(self)
+            self._run(self, "run")
+        except Skip:
             return
         output.nodePass(self)
-        self.runState = OK(self, stop-start)
+
+    def _states(self):
+        return [
+                    self.setUpState,
+                    self.tearDownState,
+                    self.runState,
+                ]
 
     def __call__(self):
         raise NotImplementedError
@@ -330,9 +393,9 @@ class FileNode(TestTree):
         TestTree.__init__(self, name=os.path.join(dirname, modname))
         self.dirname, self.filename = dirname, filename
         globs, locs = {}, {}
-        execfile(filename, globs, locs)
-        if "tests" in locs:
-            self.addChildrenFromList(locs["tests"])
+        m = __import__(modname)
+        if hasattr(m, "tests"):
+            self.addChildrenFromList(m.tests)
 
 
 class DirNode(TestTree):
@@ -381,5 +444,3 @@ class RootNode(TestTree):
                 self.addChild(DirNode(i))
         else:
             self.addChild(DirNode(path))
-            
-

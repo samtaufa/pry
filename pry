@@ -80,7 +80,7 @@ def main():
         verbose = options.verbose
     output = libpry.test._Output(verbose)
 
-    r = libpry.RootNode(path, options.recurse)
+    r = libpry.RootNode(path or ".", options.recurse)
     if pattern:
         r.mark(pattern)
     r.prune()

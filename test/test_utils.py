@@ -1,39 +1,45 @@
-import pylid
-from libpry import utils
+import libpry
 
-class uisStringLike(pylid.TestCase):
+class uisStringLike(libpry.TestTree):
     def test_all(self):
-        self.failUnless(utils.isStringLike("foo"))
-        self.failIf(utils.isStringLike([1, 2, 3]))
-        self.failIf(utils.isStringLike((1, 2, 3)))
-        self.failIf(utils.isStringLike(["1", "2", "3"]))
+        assert libpry.utils.isStringLike("foo")
+        assert not libpry.utils.isStringLike([1, 2, 3])
+        assert not libpry.utils.isStringLike((1, 2, 3))
+        assert not libpry.utils.isStringLike(["1", "2", "3"])
 
-class u_splitSpec(pylid.TestCase):
+class u_splitSpec(libpry.TestTree):
     def test_simple(self):
-        assert utils._splitSpec("foo") == ('', "foo")
-        assert utils._splitSpec("foo.bar") == ('', "foo.bar")
+        assert libpry.utils._splitSpec("foo") == ('', "foo")
+        assert libpry.utils._splitSpec("foo.bar") == ('', "foo.bar")
         
     def test_dir(self):
-        assert utils._splitSpec("testmodule") == ('testmodule', "")
-        assert utils._splitSpec("testmodule.foo") == ('testmodule', "foo")
-        assert utils._splitSpec("testmodule/dir.one") == ('testmodule/dir.one', "")
-        assert utils._splitSpec("testmodule/dir.one.foo") ==\
+        assert libpry.utils._splitSpec("testmodule") == ('testmodule', "")
+        assert libpry.utils._splitSpec("testmodule.foo") == ('testmodule', "foo")
+        assert libpry.utils._splitSpec("testmodule/dir.one") ==\
+                    ('testmodule/dir.one', "")
+        assert libpry.utils._splitSpec("testmodule/dir.one.foo") ==\
                     ('testmodule/dir.one', "foo")
 
     def test_file(self):
         assert (
-                    utils._splitSpec("testmodule/test_a") ==\
+                    libpry.utils._splitSpec("testmodule/test_a") ==\
                     ('testmodule/test_a.py', "")
                 )
         assert (
-                    utils._splitSpec("testmodule/dir.one") ==\
+                    libpry.utils._splitSpec("testmodule/dir.one") ==\
                     ('testmodule/dir.one', "")
                 )
         assert (
-                    utils._splitSpec("testmodule/dir.one/test_a") ==\
+                    libpry.utils._splitSpec("testmodule/dir.one/test_a") ==\
                     ('testmodule/dir.one/test_a.py', "")
                 )
         assert (
-                    utils._splitSpec("testmodule/dir.one/test_a.pattern") ==\
+                    libpry.utils._splitSpec("testmodule/dir.one/test_a.pattern") ==\
                     ('testmodule/dir.one/test_a.py', "pattern")
                 )
+
+
+tests = [
+    uisStringLike(),
+    u_splitSpec()
+]
