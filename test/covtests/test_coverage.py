@@ -13,7 +13,7 @@ class uCoverage(libpry.TestTree):
         reload(testUnit.mymod)
         testUnit.mymod.run(1, 2)
         self.cov.stop()
-        self.cov._integrateTrace()
+        self.cov.finalise()
         linesrun = self.cov.linesRun[os.path.abspath("./testUnit/mymod.py")]
         assert linesrun == set([3, 4, 5, 8, 12])
 
@@ -22,8 +22,7 @@ class uCoverage(libpry.TestTree):
         import testUnit.docstrings
         testUnit.docstrings.foo()
         self.cov.stop()
-        self.cov._makeCoverage()
-        self.cov._integrateTrace()
+        self.cov.finalise()
         pth = os.path.abspath("./testUnit/docstrings.py")
         assert not self.cov.statementsNotRun[pth]
 
@@ -35,7 +34,7 @@ class uCoverage(libpry.TestTree):
         import testUnit.mymod
         testUnit.mymod.coveragePath()
         self.cov.stop()
-        self.cov._integrateTrace()
+        self.cov.finalise()
         assert len(self.cov.linesRun) <= 2
         assert self.cov.linesRun.has_key(
                 os.path.abspath("./testUnit/mymod.py")
@@ -48,24 +47,24 @@ class uCoverage(libpry.TestTree):
         testUnit.mymod.coveragePath()
         testUnit.mymod2.coveragePath()
         mycov.stop()
-        mycov._makeCoverage()
+        mycov.finalise()
         assert len(mycov.linesRun) == 1
         assert mycov.linesRun.has_key(os.path.abspath("./testUnit/mymod.py"))
         assert len(mycov.allStatements) == 1
         assert mycov.allStatements.has_key(os.path.abspath("./testUnit/mymod.py"))
 
-    def test_makeCoverage(self):
+    def testfinalise(self):
         self.cov.start()
         import testUnit.makeCoverage
         testUnit.makeCoverage.foo()
         self.cov.stop()
-        self.cov._makeCoverage()
+        self.cov.finalise()
         expected = {
             os.path.abspath("./testUnit/makeCoverage.py"): [6, 12, 17, 18, 22],
         }
         assert self.cov.statementsNotRun == expected
 
-    def test_makeCoverageReentry(self):
+    def testfinaliseReentry(self):
         import testUnit.makeCoverageReentry2
 
         self.cov.start()
@@ -74,7 +73,7 @@ class uCoverage(libpry.TestTree):
         testUnit.makeCoverageReentry.bar()
         self.cov.stop()
 
-        self.cov._makeCoverage()
+        self.cov.finalise()
         expected = {os.path.abspath("./testUnit/makeCoverageReentry.py"): []}
         assert self.cov.statementsNotRun == expected
 
@@ -83,7 +82,7 @@ class uCoverage(libpry.TestTree):
         testUnit.makeCoverageReentry2.foo()
         self.cov.stop()
 
-        self.cov._makeCoverage()
+        self.cov.finalise()
         expected = {
                         os.path.abspath("./testUnit/makeCoverageReentry.py"): [],
                         os.path.abspath("./testUnit/makeCoverageReentry2.py"): [3, 4]
@@ -101,7 +100,7 @@ class uCoverage(libpry.TestTree):
         testUnit.matching.foo(1)
         testUnit.matching.foo(0)
         self.cov.stop()
-        self.cov._makeCoverage()
+        self.cov.finalise()
         assert self.cov.statementsRun == self.cov.allStatements
 
     def test_getStats(self):
@@ -110,6 +109,7 @@ class uCoverage(libpry.TestTree):
         testUnit.getStats.foo()
         testUnit.getRanges.foo()
         self.cov.stop()
+        self.cov.finalise()
         expected = [
                 (os.path.abspath("./testUnit/getStats.py"), {
                                             "allStatements": 4,
@@ -141,6 +141,7 @@ class uCoverage(libpry.TestTree):
         import testUnit.getGlobalStats
         testUnit.getGlobalStats.foo()
         self.cov.stop()
+        self.cov.finalise()
         expected = {
                         'percentage': 75.0,
                         'statementsRun': 3,
@@ -164,12 +165,21 @@ class uCoverage(libpry.TestTree):
         import testUnit.getAnnotation
         testUnit.getAnnotation.foo()
         self.cov.stop()
+        self.cov.finalise()
         ann = self.cov.getAnnotation()
         annotatedFile = open("./testUnit/getAnnotation.py.annotated").readlines()
         assert len(ann) == 1
         
         x = ann[os.path.abspath("./testUnit/getAnnotation.py")]
         assert x == annotatedFile
+
+    def test_statStr(self):
+        self.cov.start()
+        import testUnit.getGlobalStats
+        testUnit.getGlobalStats.foo()
+        self.cov.stop()
+        self.cov.statStr()
+
 
 tests = [
     uCoverage()

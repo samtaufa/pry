@@ -86,7 +86,9 @@ class Coverage:
         self.coverageFileset = set()
         for f in walkTree(coveragePath):
             if f.endswith(".py"):
-                self.coverageFileset.add(os.path.join(coveragePath, f))
+                self.coverageFileset.add(
+                    os.path.abspath(os.path.join(coveragePath, f))
+                )
         self.coveragePath = os.path.abspath(coveragePath)
         self.excludeList = [os.path.abspath(x) for x in excludeList]
         # Keys are filenames, values are dictionaries of line numbers.
@@ -97,8 +99,6 @@ class Coverage:
         self.statementsNotRun = {}
         # Data gathered by the _trace method
         self._traceData = set()
-        # Is our calculated coverage up to date?
-        self.coverageUpToDate = 0
         
     def _globalTrace(self, frame, event, arg):
         """
@@ -108,7 +108,7 @@ class Coverage:
                 - A call to os.path.abspath or os.path.join in this method
                   stuffs up trace statistics.
         """
-        if frame.f_code.co_filename in self.coverageFileset:
+        if os.path.abspath(frame.f_code.co_filename) in self.coverageFileset:
             return self._localTrace
         elif frame.f_code.co_filename == "<string>":
             return self._localTrace
@@ -124,68 +124,67 @@ class Coverage:
             self._traceData.add((frame.f_code.co_filename, frame.f_lineno))
         return self._localTrace
 
-    def _integrateTrace(self):
-        for i in self._traceData:
-            fname = os.path.abspath(i[0])
+    def _integrateTrace(self, _traceData, excludeList):
+        linesRun = {}
+        for path, line in _traceData:
+            fname = os.path.abspath(path)
             if fname.startswith(self.coveragePath):
-                if self.linesRun.has_key(fname):
-                    self.linesRun[fname].add(i[1])
+                if utils.isPathContainedAny(excludeList, fname):
+                    continue
+                if linesRun.has_key(fname):
+                    linesRun[fname].add(line)
                 else:
-                    self.linesRun[fname] = set((i[1],))
-        self._traceData = set()
+                    linesRun[fname] = set((line,))
+        return linesRun
+
+    def _allStatements(self, files, excludeList):
+        for fileName in files:
+            lno = find_executable_linenos(fileName)
+            self.allStatements[fileName] = lno
+            self.allStatements[fileName].update(self.linesRun[fileName])
 
     def start(self):
         sys.settrace(self._globalTrace)
 
     def stop(self):
         sys.settrace(None)
-        self.coverageUpToDate = 0
 
-    def _makeCoverage(self):
+    def finalise(self):
         """
             Runs through the list of files, calculates a list of lines that
             weren't covered, and writes the list to self.files["filenames"].
         """
-        if not self.coverageUpToDate:
-            self._integrateTrace()
-            for fileName in self.linesRun.keys():
-                # We only want to get the parsed statement list once
-                if not self.allStatements.has_key(fileName):
-                    for p in self.excludeList:
-                        if utils.isPathContained(p, fileName):
-                            del self.linesRun[fileName]
-                            break
-                    else:
-                        lno = find_executable_linenos(fileName)
-                        self.allStatements[fileName] = lno
-                        self.allStatements[fileName].update(self.linesRun[fileName])
+        self.linesRun = self._integrateTrace(self._traceData.copy(), self.excludeList)
 
-            # Calculate statementsRun
-            sr = {}
-            for fileName in self.linesRun:
-                sr[fileName] = set()
-                for i in self.linesRun[fileName]:
-                    if i in self.allStatements[fileName]:
-                        sr[fileName].add(i)
-            self.statementsRun = sr
+        for fileName in self.linesRun.keys():
+            lno = find_executable_linenos(fileName)
+            self.allStatements[fileName] = lno
+            self.allStatements[fileName].update(self.linesRun[fileName])
 
-            # Calculate statementsNotRun
-            snr = {}
-            for fileName in self.allStatements:
-                snr[fileName] = []
-                for i in self.allStatements[fileName]:
-                    if not i in self.statementsRun[fileName]:
-                        snr[fileName].append(i)
-                snr[fileName].sort()
-            self.statementsNotRun = snr
-            self.coverageUpToDate = 1
+        # Calculate statementsRun
+        sr = {}
+        for fileName in self.linesRun:
+            sr[fileName] = set()
+            for i in self.linesRun[fileName]:
+                if i in self.allStatements[fileName]:
+                    sr[fileName].add(i)
+        self.statementsRun = sr
+
+        # Calculate statementsNotRun
+        snr = {}
+        for fileName in self.allStatements:
+            snr[fileName] = []
+            for i in self.allStatements[fileName]:
+                if not i in self.statementsRun[fileName]:
+                    snr[fileName].append(i)
+            snr[fileName].sort()
+        self.statementsNotRun = snr
 
     def getStats(self):
         """
             Returns a list of tuples, containing a dictionary of statistics each. 
             [(name, resultDict)...]
         """
-        self._makeCoverage()
         allStats = []
         for fileName in self.linesRun:
             statDict = {}
@@ -213,7 +212,6 @@ class Coverage:
         """
             Returns a dictionary of statistics covering all files.
         """
-        self._makeCoverage()
         # Overall lines
         statementsRun = 0
         allStatements = 0
@@ -236,7 +234,6 @@ class Coverage:
             Returns a dictionary with a list of snippets of text. Each snippet
             is an annotated list of un-run lines.
         """
-        self._makeCoverage()
         annotations = {}
         for fileName in self.statementsNotRun:
             if self.statementsNotRun[fileName]:
@@ -245,3 +242,34 @@ class Coverage:
                     lines[i-1] = "> " + lines[i-1]
                 annotations[fileName] = lines
         return annotations
+
+    def statStr(self):
+        base = os.path.abspath(self.coveragePath)
+        stats = self.getStats()
+        lst = [
+            "[run ] [tot ] [percent]\n"
+            "=======================\n"
+        ]
+        for i in stats:
+            common = len(os.path.commonprefix((base, i[0])))
+            fname = i[0][common:]
+            if fname[0] == "/":
+                fname = fname[1:]
+            lst.append(
+                "[%-4s] [%-4s] [%-6.5s%%]:     %s  \n" % (
+                    i[1]["statementsRun"],
+                    i[1]["allStatements"],
+                    i[1]["coverage"],
+                    fname
+                )
+            )
+            if i[1]["ranges"]:
+                lst.append("                            ")
+                for j in i[1]["ranges"]:
+                    try:
+                        lst.append("[%s...%s] "%(j[0], j[1]))
+                    except:
+                        lst.append("%s "%(j))
+                lst.append("\n")
+        return "".join(lst)
+

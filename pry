@@ -79,13 +79,18 @@ def main():
     else:
         parser.error("Please pass only one argument.")
 
+    if options.annotate or options.stats:
+        coverage = True
+    else:
+        coverage = False
+
     if options.quiet:
         verbose = 0
     else:
         verbose = options.verbose
     output = libpry.test._Output(verbose)
 
-    r = libpry.RootNode(path or ".", options.recurse)
+    r = libpry.RootNode(path or ".", options.recurse, coverage)
     if pattern:
         r.mark(pattern)
     r.prune()

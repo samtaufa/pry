@@ -1,4 +1,4 @@
-import libpry
+import libpry.utils
 
 class uisStringLike(libpry.TestTree):
     def test_all(self):

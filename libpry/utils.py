@@ -16,6 +16,16 @@ def isPathContained(outer, inner):
     return False
 
 
+def isPathContainedAny(outerList, inner):
+    """
+        Like isPathContained, but with a list of outer directories.
+    """
+    for i in outerList:
+        if isPathContained(i, inner):
+            return True
+    return False
+
+
 def isStringLike(anobj):
     try:
         # Avoid succeeding expensively if anobj is large.

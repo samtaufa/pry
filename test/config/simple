@@ -1,0 +1,4 @@
+
+base = one
+coverage = two
+exclude = three

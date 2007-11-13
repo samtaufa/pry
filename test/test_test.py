@@ -1,19 +1,18 @@
 import fnmatch, cStringIO, os
-import libpry
-
+import libpry.test
+import libpry.helpers
 
 zero = libpry.test._Output(0)
 
-
-class TSetupCheckRoot(libpry.TestTree):
+class TSetupCheckRoot(libpry.test.TestTree):
     def __init__(self, *args, **kwargs):
-        libpry.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.TestTree.__init__(self, *args, **kwargs)
         self.log = []
 
 
-class TSetupCheck(libpry.TestTree):
+class TSetupCheck(libpry.test.TestTree):
     def __init__(self, *args, **kwargs):
-        libpry.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.TestTree.__init__(self, *args, **kwargs)
 
     def setUp(self):
         self.getTopNode().log.append("setup_%s"%self.name)
@@ -33,7 +32,7 @@ class TSetupCheckNodes(TSetupCheck):
         self.getTopNode().log.append("test_b")
 
 
-class _SetupAllCheck(libpry.TestTree):
+class _SetupAllCheck(libpry.test.TestTree):
     def setUp(self):
         self.getTopNode().log.append("setUp")
 
@@ -67,15 +66,15 @@ class TTeardownAllCheck(_SetupAllCheck):
         self.getTopNode().log.append("tearDownAll")
 
 
-class TSubTree(libpry.TestTree):
+class TSubTree(libpry.test.TestTree):
     name = "sub"
     def test_fail(self): assert False
     def test_error (self): raise ValueError
 
 
-class TTree(libpry.TestTree):
+class TTree(libpry.test.TestTree):
     def __init__(self, *args, **kwargs):
-        libpry.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.TestTree.__init__(self, *args, **kwargs)
         self.addChild(TSubTree())
         self["item"] = "data"
 
@@ -91,17 +90,17 @@ class TTree(libpry.TestTree):
 def errFunc(): assert None
 
 
-class TSetupFailure(libpry.TestTree):
+class TSetupFailure(libpry.test.TestTree):
     def setUp(self): raise ValueError
     def test_pass(self): pass
 
 
-class TTeardownFailure(libpry.TestTree):
+class TTeardownFailure(libpry.test.TestTree):
     def tearDown(self): raise ValueError
     def test_pass(self): pass
 
 
-class uSetupCheck(libpry.TestTree):
+class uSetupCheck(libpry.test.TestTree):
     def setUp(self):
         self.t =  TSetupCheckRoot(
             [
@@ -137,7 +136,7 @@ class uSetupCheck(libpry.TestTree):
         assert self.t.log == v
 
 
-class uTestTree(libpry.TestTree):
+class uTestTree(libpry.test.TestTree):
     def setUp(self):
         self.t = TTree()
 
@@ -195,9 +194,9 @@ class uTestTree(libpry.TestTree):
         assert len(self.t.allPassed()) == 1
         assert len(self.t.allNotRun()) == 0
         assert len(self.t.allError()) == 2
-        assert isinstance(self.t.children[0].setUpState, libpry.OK)
+        assert isinstance(self.t.children[0].setUpState, libpry.test.OK)
         assert not self.t.children[0].isError()
-        assert isinstance(self.t.children[0].tearDownState, libpry.OK)
+        assert isinstance(self.t.children[0].tearDownState, libpry.test.OK)
 
     def test_run_marked(self):
         self.t.mark("sub")
@@ -208,46 +207,46 @@ class uTestTree(libpry.TestTree):
     def test_getitem(self):
         n = self.t.search("test_pass")[0]
         assert n["item"] == "data"
-        libpry.raises(KeyError, n.__getitem__, "nonexistent")
+        libpry.helpers.raises(KeyError, n.__getitem__, "nonexistent")
 
     def test_setupFailure(self):
         t = TSetupFailure()
         t.run(zero)
-        assert isinstance(t.children[0].setUpState, libpry.Error)
+        assert isinstance(t.children[0].setUpState, libpry.test.Error)
         assert t.children[0].isError()
         assert len(t.allNotRun()) == 1
 
     def test_setupFailure(self):
         t = TTeardownFailure()
-        libpry.raises(libpry.Skip, t.run, zero)
-        assert isinstance(t.children[0].tearDownState, libpry.Error)
+        libpry.helpers.raises(libpry.test.Skip, t.run, zero)
+        assert isinstance(t.children[0].tearDownState, libpry.test.Error)
         assert len(t.allNotRun()) == 0
 
     def test_getPath(self):
-        t = libpry.TestTree(name="one")
+        t = libpry.test.TestTree(name="one")
         assert t.fullPath() == "one"
-        t2 = libpry.TestTree(name="two")
+        t2 = libpry.test.TestTree(name="two")
         t.addChild(t2)
         assert t2.fullPath() == "one.two"
 
-        t3 = libpry.TestTree()
+        t3 = libpry.test.TestTree()
         t.addChild(t3)
-        t4 = libpry.TestTree(name="four")
+        t4 = libpry.test.TestTree(name="four")
         t3.addChild(t4)
         assert t4.fullPath() == "one.TestTree.four"
 
     def test_search(self):
-        t = libpry.TestTree(
+        t = libpry.test.TestTree(
             [
-                libpry.TestTree(name="one"), [
-                    libpry.TestTree(name="a"),
-                    libpry.TestTree(name="b"),
-                    libpry.TestTree(name="one"),
+                libpry.test.TestTree(name="one"), [
+                    libpry.test.TestTree(name="a"),
+                    libpry.test.TestTree(name="b"),
+                    libpry.test.TestTree(name="one"),
                 ],
-                libpry.TestTree(name="two"), [
-                    libpry.TestTree(name="b"),
+                libpry.test.TestTree(name="two"), [
+                    libpry.test.TestTree(name="b"),
                 ],
-                libpry.TestTree(name="three"),
+                libpry.test.TestTree(name="three"),
             ]
         )
         r = t.search("one")
@@ -306,7 +305,7 @@ class uTestTree(libpry.TestTree):
                 ]
             )
         x = t.children[0]
-        libpry.raises("no error for this node", x.getError)
+        libpry.helpers.raises("no error for this node", x.getError)
         t.run(zero)
         assert x.getError()
 
@@ -325,7 +324,7 @@ class uTestTree(libpry.TestTree):
         assert t.log == expected
 
 
-class uDirNode(libpry.TestTree):
+class uDirNode(libpry.test.TestTree):
     def setUp(self):
         self.cwd = os.getcwd()
 
@@ -333,48 +332,51 @@ class uDirNode(libpry.TestTree):
         os.chdir(self.cwd)
         
     def test_init(self):
-        self.d = libpry.DirNode("testmodule")
+        self.d = libpry.test.DirNode("testmodule", False)
         assert len(self.d.search("test_one")) == 2
 
     def test_run(self):
-        self.d = libpry.DirNode("testmodule")
+        self.d = libpry.test.DirNode("testmodule", False)
+        self.d.run(zero)
+
+    def test_coverage(self):
+        self.d = libpry.test.DirNode("testmodule", True)
         self.d.run(zero)
 
 
-class uRootNode(libpry.TestTree):
+class uRootNode(libpry.test.TestTree):
     def test_init(self):
-        r = libpry.RootNode("testmodule", True)
+        r = libpry.test.RootNode("testmodule", True, False)
         assert r.search("test_one")
         assert r.search("testmodule/test_a.uOne.test_one")
         assert r.search("testmodule/two/test_two")
         assert not r.search("nonexistent")
 
-        r = libpry.RootNode("testmodule", False)
+        r = libpry.test.RootNode("testmodule", False, False)
         assert not r.search("testmodule/two/test_two")
         assert r.search("test_one")
 
-        
 
-class uTestNode(libpry.TestTree):
+class uTestNode(libpry.test.TestTree):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
         x.run(zero)
-        assert isinstance(x.callState, libpry.Error)
+        assert isinstance(x.callState, libpry.test.Error)
         str(x.callState)
 
     def test_run_pass(self):
         t = TTree()
         x = t.search("test_pass")[0]
         x.run(zero)
-        assert isinstance(x.callState, libpry.OK)
+        assert isinstance(x.callState, libpry.test.OK)
 
     def test_call(self):
-        t = libpry.TestNode("name")
-        libpry.raises(NotImplementedError, t)
+        t = libpry.test.TestNode("name")
+        libpry.helpers.raises(NotImplementedError, t)
 
 
-class uOutput(libpry.TestTree):
+class uOutput(libpry.test.TestTree):
     def setUp(self):
         self.t = TTree()
         self.node = self.t.search("test_pass")[0]
@@ -399,6 +401,7 @@ class uOutput(libpry.TestTree):
         assert "test_pass" in o.nodePre(self.node)
         assert o.nodeError(self.node) == "FAIL\n"
 
+
 tests = [
     uSetupCheck(),
     uOutput(),
@@ -406,6 +409,4 @@ tests = [
     uRootNode(),
     uDirNode(),
     uTestTree(),
-
-
 ]

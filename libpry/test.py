@@ -4,7 +4,7 @@
     Each test is a node in a tree of tests. Each test can have a setUp and
     tearDown method - these get run before and after each child node is run.
 """
-import sys, time, traceback, os, fnmatch
+import sys, time, traceback, os, fnmatch, config
 import tinytree
 import coverage
 
@@ -73,7 +73,7 @@ class _OutputOne:
         for i in root.preOrder():
             if i.isError():
                 lst.append(str(i.getError()))
-        if root.runState:
+        if root.runState and not root.isError():
             infostr = []
             errs = root.allError()
             if errs:
@@ -93,6 +93,17 @@ class _OutputOne:
             lst.append(
                 "No tests run.\n"
             )
+
+        if root.cover:
+            lst.append("\n\n")
+            lst.append("                    Coverage\n")
+            lst.append("                    ========\n")
+            lst.append("\n")
+            for i in root.preOrder():
+                if hasattr(i, "coverage") and i.coverage:
+                    lst.append(i.coverage.statStr())
+                    #t.coverageSummary()
+
         return "".join(lst)
 
 
@@ -443,7 +454,8 @@ class FileNode(TestTree):
 
 
 class DirNode(TestTree):
-    def __init__(self, path):
+    CONF = ".pry"
+    def __init__(self, path, cover):
         TestTree.__init__(self, name=None)
         if os.path.isdir(path):
             self.dirPath = path
@@ -451,8 +463,17 @@ class DirNode(TestTree):
         elif os.path.isfile(path):
             self.dirPath = os.path.dirname(path) or "."
             glob = os.path.basename(path)
-        self.baseDir = ".."
+
+        c = config.Config(os.path.join(self.dirPath, self.CONF))
+        self.baseDir = c.base
+        self.coveragePath = c.coverage
+        self.excludeList = c.exclude
+
+        self.coverage = False
         self._pre()
+        if cover:
+            self.coverage = coverage.Coverage(self.coveragePath, self.excludeList)
+            self.coverage.start()
         for i in os.listdir("."):
             if fnmatch.fnmatch(i, glob):
                 self.addChild(FileNode(path, i))
@@ -465,15 +486,21 @@ class DirNode(TestTree):
         sys.path.insert(0, self.baseDir)
         self.oldcwd = os.getcwd()
         os.chdir(self.dirPath)
-
+        if self.coverage:
+            self.coverage.start()
+    
     def _post(self):
         sys.path = self.oldPath
         os.chdir(self.oldcwd)
+        if self.coverage:
+            self.coverage.stop()
 
     def setUpAll(self):
         self._pre()
 
     def tearDownAll(self):
+        if self.coverage:
+            self.coverage.finalise()
         self._post()
 
     def __repr__(self):
@@ -484,7 +511,8 @@ class RootNode(TestTree):
     """
         This node is the parent of all tests.
     """
-    def __init__(self, path, recurse):
+    def __init__(self, path, recurse, cover):
+        self.path, self.recurse, self.cover = path, recurse, cover
         TestTree.__init__(self, name=None)
         if recurse:
             dirset = set()
@@ -493,6 +521,6 @@ class RootNode(TestTree):
                     if fnmatch.fnmatch(i, _TestGlob):
                         dirset.add(root)
             for i in dirset:
-                self.addChild(DirNode(i))
+                self.addChild(DirNode(i, cover))
         else:
-            self.addChild(DirNode(path))
+            self.addChild(DirNode(path, cover))
