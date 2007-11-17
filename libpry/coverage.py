@@ -70,11 +70,19 @@ def find_executable_linenos(filename):
     return lines
 
 
-def walkTree(path):
+def fileSet(path, excludeList):
+    """
+        Recursively finds all .py files that not included in the excludelist.
+        Returns a set of absolute paths.
+    """
+    s = set()
     for root, dirs, files in os.walk(path):
         for f in files:
-            relpath = os.path.join(root[len(path)+1:], f)
-            yield relpath
+            if f.endswith(".py"):
+                ap = os.path.abspath(os.path.join(root, f))
+                if not utils.isPathContainedAny(excludeList, ap):
+                    s.add(ap)
+    return s
 
 
 class Coverage:
@@ -83,14 +91,9 @@ class Coverage:
             coveragePath    - Path to the file tree that will be analysed.
             excludeList     - List of exceptions to coverage analysis.
         """
-        self.coverageFileset = set()
-        for f in walkTree(coveragePath):
-            if f.endswith(".py"):
-                self.coverageFileset.add(
-                    os.path.abspath(os.path.join(coveragePath, f))
-                )
-        self.coveragePath = os.path.abspath(coveragePath)
         self.excludeList = [os.path.abspath(x) for x in excludeList]
+        self.coveragePath = os.path.abspath(coveragePath)
+        self.coverageFileset = fileSet(self.coveragePath, self.excludeList)
         # Keys are filenames, values are dictionaries of line numbers.
         self.linesRun = {}
         self.statementsRun = {}
@@ -99,21 +102,33 @@ class Coverage:
         self.statementsNotRun = {}
         # Data gathered by the _trace method
         self._traceData = set()
-        
+
     def _globalTrace(self, frame, event, arg):
         """
-            This method is extremely delicate, because the Python trace stuff
-            appears to be buggy.
 
-                - A call to os.path.abspath or os.path.join in this method
-                  stuffs up trace statistics.
+            This method is extremely delicate, because the Python trace stuff
+            is buggy. For example
+
+                for i in []: pass
+
+            At the top of the function, and watch your coverage stats go to hell.
+
+            We really should call abspath on the filename below, since the
+            co_filename attribute for non-module imports is a relative path.
+            This means that we can only run coverage on modules at the moment.
         """
-        if os.path.abspath(frame.f_code.co_filename) in self.coverageFileset:
-            return self._localTrace
-        elif frame.f_code.co_filename == "<string>":
-            return self._localTrace
-        else:
-            return None
+        # FIXME: Lodge a Python bug over this
+        try:
+            for i in []: pass
+        except Exception, e:
+            print repr(e)
+
+#        if frame.f_code.co_filename in self.coverageFileset:
+#            return self._localTrace
+#        elif frame.f_code.co_filename == "<string>":
+#            return self._localTrace
+#        else:
+#            return None
 
     def _localTrace(self, frame, event, arg):
         """
@@ -129,8 +144,6 @@ class Coverage:
         for path, line in _traceData:
             fname = os.path.abspath(path)
             if fname.startswith(self.coveragePath):
-                if utils.isPathContainedAny(excludeList, fname):
-                    continue
                 if linesRun.has_key(fname):
                     linesRun[fname].add(line)
                 else:

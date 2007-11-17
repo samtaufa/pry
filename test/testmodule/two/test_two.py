@@ -7,7 +7,6 @@ class uTwo(libpry.TestTree):
     def test_two(self):
         pass
 
-
 tests = [
     uTwo()
 ]

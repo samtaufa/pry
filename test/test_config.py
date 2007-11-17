@@ -20,6 +20,10 @@ class uConfig(libpry.TestTree):
         assert c.coverage == ".."
         assert c.exclude == ["."]
 
+    def test_nonexistent(self):
+        c = config.Config("config/magic")
+        assert c._magic
+
 
 tests = [
     uConfig()

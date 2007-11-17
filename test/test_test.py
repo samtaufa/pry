@@ -150,10 +150,10 @@ class uTestTree(libpry.test.TestTree):
         t  = TSetupCheckRoot()
         assert not t.hasTests()
 
-    def test_hasTests(self):
-        assert self.t.hasTests()
-        t  = TSetupCheckRoot()
-        assert not t.hasTests()
+    def test_special(self):
+        print "Pre"
+        self.t.special()
+        print "Post"
 
     def test_prune(self):
         t = TSetupCheckRoot(
@@ -339,20 +339,22 @@ class uDirNode(libpry.test.TestTree):
         self.d = libpry.test.DirNode("testmodule", False)
         self.d.run(zero)
 
-    def test_coverage(self):
+    def tttest_coverage(self):
         self.d = libpry.test.DirNode("testmodule", True)
         self.d.run(zero)
 
 
 class uRootNode(libpry.test.TestTree):
     def test_init(self):
-        r = libpry.test.RootNode("testmodule", True, False)
+        r = libpry.test.RootNode(False)
+        r.addPath("testmodule", True)
         assert r.search("test_one")
         assert r.search("testmodule/test_a.uOne.test_one")
         assert r.search("testmodule/two/test_two")
         assert not r.search("nonexistent")
 
-        r = libpry.test.RootNode("testmodule", False, False)
+        r = libpry.test.RootNode(False)
+        r.addPath("testmodule", False)
         assert not r.search("testmodule/two/test_two")
         assert r.search("test_one")
 
@@ -378,25 +380,32 @@ class uTestNode(libpry.test.TestTree):
 
 class uOutput(libpry.test.TestTree):
     def setUp(self):
-        self.t = TTree()
+        self.t = libpry.test.RootNode(False)
+        self.t.addChild(TTree())
         self.node = self.t.search("test_pass")[0]
         self.s = cStringIO.StringIO()
 
     def test_zero(self):
+        self.t.run(zero)
         o = libpry.test._OutputZero()
         assert not o.nodePre(self.node)
         assert not o.nodeError(self.node)
 
     def test_one(self):
         o = libpry.test._OutputOne()
+        assert o.final(self.t)
+        self.t.run(zero)
         assert o.nodeError(self.node) == "E"
+        assert o.final(self.t)
 
     def test_two(self):
+        self.t.run(zero)
         o = libpry.test._OutputTwo()
         assert "test_pass" in o.nodePre(self.node)
         assert o.nodeError(self.node) == "FAIL\n"
 
     def test_three(self):
+        self.t.run(zero)
         o = libpry.test._OutputThree()
         assert "test_pass" in o.nodePre(self.node)
         assert o.nodeError(self.node) == "FAIL\n"

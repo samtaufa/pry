@@ -51,7 +51,6 @@ class OK:
     def __init__(self, node, time):
         self.node, self.time = node, time
 
-
 class _OutputZero:
     def nodePre(self, node): return ""
     def nodeError(self, node): return ""
@@ -78,14 +77,10 @@ class _OutputOne:
             errs = root.allError()
             if errs:
                 infostr.append ("fail: %s"%len(errs))
-            if infostr:
-                infostr = "(%s)"%"".join(infostr)
-            else:
-                infostr = ""
             lst.append(
                 "%s tests %s - %.3fs\n"%(
                     len(root.tests()),
-                    infostr,
+                    "(%s)"%"".join(infostr) if infostr else "",
                     root.runState.time
                 )
             )
@@ -103,7 +98,6 @@ class _OutputOne:
                 if hasattr(i, "coverage") and i.coverage:
                     lst.append(i.coverage.statStr())
                     #t.coverageSummary()
-
         return "".join(lst)
 
 
@@ -203,13 +197,16 @@ class _TestBase(tinytree.Tree):
                 lst.append(i)
         return lst
 
+    def special(self):
+        yield self
+
     def hasTests(self):
         """
             Does this node have currently selected child tests?
         """
         for i in self.preOrder():
             if isinstance(i, TestNode) and i._selected:
-                return True
+                 return True
         return False
 
     def prune(self):
@@ -438,12 +435,26 @@ class TestWrapper(TestNode):
 
 
 class FileNode(TestTree):
-    def __init__(self, dirname, filename):
+    # The special magic flag allows pry to run coverage analysis on its own 
+    # test suite
+    def __init__(self, dirname, filename, magic):
         modname = filename[:-3]
         TestTree.__init__(self, name=os.path.join(dirname, modname))
         self.dirname, self.filename = dirname, filename
         m = __import__(modname)
-        # Force a reload to avoid Python caching modules that happen to have 
+        # When pry starts up, it loads the libpry module. In order for the
+        # instantiation stuff in libpry to be counted in coverage, we need to
+        # go through and re-execute them. We don't "reload", since this will create
+        # a new suite of class instances, and break our code.
+        if magic:
+            for k in sys.modules.keys():
+                if "libpry" in k and sys.modules[k]:
+                    n = sys.modules[k].__file__
+                    if n.endswith("pyc"):
+                        execfile(n[:-1])
+                    elif n.endswith("py"):
+                        execfile(n)
+        # Force a reload to stop Python caching modules that happen to have 
         # the same name
         reload(m)
         if hasattr(m, "tests"):
@@ -468,6 +479,7 @@ class DirNode(TestTree):
         self.baseDir = c.base
         self.coveragePath = c.coverage
         self.excludeList = c.exclude
+        self.magic = c._magic
 
         self.coverage = False
         self._pre()
@@ -476,7 +488,7 @@ class DirNode(TestTree):
             self.coverage.start()
         for i in os.listdir("."):
             if fnmatch.fnmatch(i, glob):
-                self.addChild(FileNode(path, i))
+                self.addChild(FileNode(path, i, self.magic))
         self._post()
 
     def _pre(self):
@@ -499,9 +511,9 @@ class DirNode(TestTree):
         self._pre()
 
     def tearDownAll(self):
+        self._post()
         if self.coverage:
             self.coverage.finalise()
-        self._post()
 
     def __repr__(self):
         return "DirNode: %s"%self.dirPath
@@ -511,9 +523,11 @@ class RootNode(TestTree):
     """
         This node is the parent of all tests.
     """
-    def __init__(self, path, recurse, cover):
-        self.path, self.recurse, self.cover = path, recurse, cover
+    def __init__(self, cover):
         TestTree.__init__(self, name=None)
+        self.cover = cover
+
+    def addPath(self, path, recurse):
         if recurse:
             dirset = set()
             for root, dirs, files in os.walk(path):
@@ -521,6 +535,8 @@ class RootNode(TestTree):
                     if fnmatch.fnmatch(i, _TestGlob):
                         dirset.add(root)
             for i in dirset:
-                self.addChild(DirNode(i, cover))
+                self.addChild(DirNode(i, self.cover))
         else:
-            self.addChild(DirNode(path, cover))
+            self.addChild(DirNode(path, self.cover))
+
+

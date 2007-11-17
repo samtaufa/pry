@@ -6,11 +6,14 @@
         exclude =   newline separated
                     paths excluded
                     from coverage
+
+    The special _magic flag is needed to allow pry to run coverage analysis on
+    itsef.
 """
 import ConfigParser, cStringIO, os.path
 
 class Config:
-    _valid = set(["base", "coverage", "exclude"])
+    _valid = set(["base", "coverage", "exclude", "_magic"])
     def __init__(self, path):
         self.path = path
         if os.path.isfile(path):
@@ -31,6 +34,10 @@ class Config:
             items = dict(self.c.items("pry"))
             self.base = items.get("base", "..").strip()
             self.coverage = items.get("coverage", "..").strip()
+            if items.has_key("_magic"):
+                self._magic = True
+            else:
+                self._magic = False
             ex = items.get("exclude", ".")
             ex = ex.split("\n")
             self.exclude = [i.strip() for i in ex]
@@ -38,3 +45,4 @@ class Config:
             self.base = ".."
             self.coverage = ".."
             self.exclude = ["."]
+            self._magic = False

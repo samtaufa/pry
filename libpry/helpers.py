@@ -21,4 +21,3 @@ def raises(exc, callableObj, *args, **kwargs):
                     "Expected %s, but caught %s"%(exc.__name__, v)
                 )
     raise AssertionError("No exception raised.")
-

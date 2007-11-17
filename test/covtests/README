@@ -1,0 +1,4 @@
+
+The tests in here actually activate coverage analysis. Running them with pry
+coverage analysis turned on will conflict.
+

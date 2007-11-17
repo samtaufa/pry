@@ -1,4 +1,34 @@
-import libpry.utils
+import libpry
+
+
+class uisPathContained(libpry.TestTree):
+    def test_isPathContained(self):
+        assert libpry.utils.isPathContained(".", "./foo.py")
+        assert libpry.utils.isPathContained("..", ".")
+        assert not libpry.utils.isPathContained(".", "../foo.py")
+        assert libpry.utils.isPathContained(".", ".")
+        assert libpry.utils.isPathContained("../foo.py", "../foo.py")
+        assert not libpry.utils.isPathContained("/bar/boo", "/bar/booboo")
+
+
+#class usummariseList(libpry.TestTree):
+#    def test_summariseList(self):
+#        lst = [1, 2, 3, 4, 5]
+#        expected = [(1, 5)]
+#        self.failUnless(summariseList(lst) == expected)
+#
+#        lst = []
+#        expected = []
+#        self.failUnless(summariseList(lst) == expected)
+#        
+#        lst = [1]
+#        expected = [1]
+#        self.failUnless(summariseList(lst) == expected)
+#
+#        lst = [1, 2, 3, 8, 11, 12, 13, 15, 16, 17, 23]
+#        expected = [(1, 3), 8, (11, 13), (15, 17), 23]
+#        self.failUnless(summariseList(lst) == expected)
+
 
 class uisStringLike(libpry.TestTree):
     def test_all(self):
@@ -45,5 +75,6 @@ class u_splitSpec(libpry.TestTree):
 
 tests = [
     uisStringLike(),
-    u_splitSpec()
+    u_splitSpec(),
+    uisPathContained()
 ]
