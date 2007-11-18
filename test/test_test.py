@@ -150,11 +150,6 @@ class uTestTree(libpry.test.TestTree):
         t  = TSetupCheckRoot()
         assert not t.hasTests()
 
-    def test_special(self):
-        print "Pre"
-        self.t.special()
-        print "Post"
-
     def test_prune(self):
         t = TSetupCheckRoot(
                 [

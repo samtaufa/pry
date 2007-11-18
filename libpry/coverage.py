@@ -117,18 +117,12 @@ class Coverage:
             co_filename attribute for non-module imports is a relative path.
             This means that we can only run coverage on modules at the moment.
         """
-        # FIXME: Lodge a Python bug over this
-        try:
-            for i in []: pass
-        except Exception, e:
-            print repr(e)
-
-#        if frame.f_code.co_filename in self.coverageFileset:
-#            return self._localTrace
-#        elif frame.f_code.co_filename == "<string>":
-#            return self._localTrace
-#        else:
-#            return None
+        if os.path.abspath(frame.f_code.co_filename) in self.coverageFileset:
+            return self._localTrace
+        elif frame.f_code.co_filename == "<string>":
+            return self._localTrace
+        else:
+            return None
 
     def _localTrace(self, frame, event, arg):
         """
