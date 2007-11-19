@@ -51,6 +51,7 @@ class OK:
     def __init__(self, node, time):
         self.node, self.time = node, time
 
+
 class _OutputZero:
     def nodePre(self, node): return ""
     def nodeError(self, node): return ""
@@ -196,9 +197,6 @@ class _TestBase(tinytree.Tree):
             if isinstance(i, TestNode):
                 lst.append(i)
         return lst
-
-    def special(self):
-        yield self
 
     def hasTests(self):
         """
@@ -444,8 +442,9 @@ class FileNode(TestTree):
         m = __import__(modname)
         # When pry starts up, it loads the libpry module. In order for the
         # instantiation stuff in libpry to be counted in coverage, we need to
-        # go through and re-execute them. We don't "reload", since this will create
-        # a new suite of class instances, and break our code.
+        # go through and re-execute them. We don't "reload", since this will
+        # create a new suite of class instances, and break our code.
+        # begin nocover
         if magic:
             for k in sys.modules.keys():
                 if "libpry" in k and sys.modules[k]:
@@ -454,6 +453,7 @@ class FileNode(TestTree):
                         execfile(n[:-1])
                     elif n.endswith("py"):
                         execfile(n)
+        # end nocover
         # Force a reload to stop Python caching modules that happen to have 
         # the same name
         reload(m)
@@ -484,7 +484,11 @@ class DirNode(TestTree):
         self.coverage = False
         self._pre()
         if cover:
-            self.coverage = coverage.Coverage(self.coveragePath, self.excludeList)
+            self.coverage = coverage.Coverage(
+                self.coveragePath,
+                self.excludeList,
+                True if cover is DUMMY else False
+            )
             self.coverage.start()
         for i in os.listdir("."):
             if fnmatch.fnmatch(i, glob):
@@ -517,6 +521,9 @@ class DirNode(TestTree):
         return "DirNode: %s"%self.dirPath
 
 
+# Do a dummy coverage run
+DUMMY = object()
+
 class RootNode(TestTree):
     """
         This node is the parent of all tests.
@@ -536,5 +543,3 @@ class RootNode(TestTree):
                 self.addChild(DirNode(i, self.cover))
         else:
             self.addChild(DirNode(path, self.cover))
-
-

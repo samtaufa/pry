@@ -354,6 +354,32 @@ class uRootNode(libpry.test.TestTree):
         assert r.search("test_one")
 
 
+class FullTree(libpry.test.TestTree):
+    def setUp(self):
+        r = libpry.test.RootNode(False)
+        r.addPath("testmodule", True)
+        self["root"] = r
+        self["node"] = r.search("test_one")[0]
+
+        c = libpry.test.RootNode(libpry.test.DUMMY)
+        c.addPath("testmodule", True)
+        c.run(zero)
+        self["coverageRoot"] = c
+
+
+class uOutput(libpry.test.TestTree):
+    def __init__(self, outputClass):
+        libpry.test.TestTree.__init__(self, name=outputClass.__name__)
+        self.output = outputClass()
+
+    def test_run(self):
+        self["root"].run(self.output)
+
+    def test_final(self):
+        self.output.final(self["root"])
+        self.output.final(self["coverageRoot"])
+
+    
 class uTestNode(libpry.test.TestTree):
     def test_run_error(self):
         t = TTree()
@@ -373,44 +399,43 @@ class uTestNode(libpry.test.TestTree):
         libpry.helpers.raises(NotImplementedError, t)
 
 
-class uOutput(libpry.test.TestTree):
-    def setUp(self):
-        self.t = libpry.test.RootNode(False)
-        self.t.addChild(TTree())
-        self.node = self.t.search("test_pass")[0]
-        self.s = cStringIO.StringIO()
+class u_Output(libpry.test.TestTree):
+    def test_construct(self):
+        o = libpry.test._Output(0)
+        assert isinstance(o.o, libpry.test._OutputZero)
 
-    def test_zero(self):
-        self.t.run(zero)
-        o = libpry.test._OutputZero()
-        assert not o.nodePre(self.node)
-        assert not o.nodeError(self.node)
+        o = libpry.test._Output(1)
+        assert isinstance(o.o, libpry.test._OutputOne)
 
-    def test_one(self):
-        o = libpry.test._OutputOne()
-        assert o.final(self.t)
-        self.t.run(zero)
-        assert o.nodeError(self.node) == "E"
-        assert o.final(self.t)
+        o = libpry.test._Output(2)
+        assert isinstance(o.o, libpry.test._OutputTwo)
 
-    def test_two(self):
-        self.t.run(zero)
-        o = libpry.test._OutputTwo()
-        assert "test_pass" in o.nodePre(self.node)
-        assert o.nodeError(self.node) == "FAIL\n"
+        o = libpry.test._Output(3)
+        assert isinstance(o.o, libpry.test._OutputThree)
 
-    def test_three(self):
-        self.t.run(zero)
-        o = libpry.test._OutputThree()
-        assert "test_pass" in o.nodePre(self.node)
-        assert o.nodeError(self.node) == "FAIL\n"
+        o = libpry.test._Output(999)
+        assert isinstance(o.o, libpry.test._OutputThree)
+
+
+class uTestWrapper(libpry.test.TestTree):
+    def test_repr(self):
+        def x(): pass
+        t = libpry.test.TestWrapper("foo", x)
+        repr(t)
 
 
 tests = [
     uSetupCheck(),
-    uOutput(),
+    FullTree(), [
+        uOutput(libpry.test._OutputZero),
+        uOutput(libpry.test._OutputOne),
+        uOutput(libpry.test._OutputTwo),
+        uOutput(libpry.test._OutputThree),
+    ],
     uTestNode(),
     uRootNode(),
     uDirNode(),
     uTestTree(),
+    u_Output(),
+    uTestWrapper(),
 ]

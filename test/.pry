@@ -1,5 +1,4 @@
 coverage = ../libpry
-exclude =   testmodule
-            covfiles
+exclude =   .
 _magic = True
 

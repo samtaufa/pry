@@ -107,11 +107,12 @@ class File:
 
 
 class Coverage:
-    def __init__(self, coveragePath, excludeList=[]):
+    def __init__(self, coveragePath, excludeList=[], dummy=False):
         """
             coveragePath    - Path to the file tree that will be analysed.
             excludeList     - List of exceptions to coverage analysis.
         """
+        self.dummy = dummy
         if coveragePath:
             self.excludeList = [os.path.abspath(x) for x in excludeList]
             self.coveragePath = os.path.abspath(coveragePath)
@@ -122,6 +123,8 @@ class Coverage:
             Recursively finds all .py files not included in the excludelist.
             Returns a set of File objects.
         """
+        if os.path.isfile(path):
+            return {path: File(path)}
         d = dict()
         for root, dirs, files in os.walk(path):
             for f in files:
@@ -150,10 +153,12 @@ class Coverage:
             return None
 
     def start(self):
-        sys.settrace(self._globalTrace)
+        if not self.dummy:
+            sys.settrace(self._globalTrace)
 
     def stop(self):
-        sys.settrace(None)
+        if not self.dummy:
+            sys.settrace(None)
     # end nocover
 
     def getGlobalStats(self):
