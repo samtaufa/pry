@@ -6,16 +6,13 @@ _coverRe = re.compile("\s*#\s*(begin|end)\s+nocover", re.I)
 class File:
     def __init__(self, path):
         if path:
-            self.path = path
+            self.path = os.path.abspath(path)
             data = open(path, "r").read()
             code = compile(data, path, "exec")
-            exclusions = self.getExclusions(data, path)
+            self.exclusions = self.getExclusions(data, path)
             lines = self.getLines(code)
-            self.executable = lines - exclusions
-        else:
-            self.path = ""
-            self.executable = set()
-        self.executed = set()
+            self.executable = lines - self.exclusions
+            self.executed = set()
 
     def __cmp__(self, other):
         c = cmp(self.percentage, other.percentage)
@@ -39,7 +36,7 @@ class File:
 
     @property
     def numExecuted(self):
-        return len(self.executed)
+        return len(self.executed - self.exclusions)
 
     @property
     def notExecuted(self):
@@ -65,13 +62,14 @@ class File:
         linenos = set()
         line_increments = [ord(c) for c in code.co_lnotab[1::2]]
         lineno = code.co_firstlineno
-        linenos.add(lineno)
         for li in line_increments:
             lineno += li
             linenos.add(lineno)
         for c in code.co_consts:
             if isinstance(c, types.CodeType):
                 linenos.update(self.getLines(c))
+        if linenos:
+            linenos.add(code.co_firstlineno)
         return linenos
 
     def getExclusions(self, data, filename):
@@ -102,14 +100,10 @@ class File:
             Returns a dictionary with a list of snippets of text. Each snippet
             is an annotated list of un-run lines.
         """
-        annotations = {}
-        for fileName in self.statementsNotRun:
-            if self.statementsNotRun[fileName]:
-                lines = open(fileName).readlines()
-                for i in self.statementsNotRun[fileName]:
-                    lines[i-1] = "> " + lines[i-1]
-                annotations[fileName] = lines
-        return annotations
+        lines = open(self.path, "r").readlines()
+        for i in self.notExecuted:
+            lines[i-1] = "> " + lines[i-1]
+        return "".join(lines)
 
 
 class Coverage:
@@ -132,11 +126,12 @@ class Coverage:
         for root, dirs, files in os.walk(path):
             for f in files:
                 if f.endswith(".py"):
-                    ap = os.path.abspath(os.path.join(root, f))
-                    if not utils.isPathContainedAny(excludeList, ap):
-                        d[ap] = File(ap)
+                    p = os.path.join(root, f)
+                    if not utils.isPathContainedAny(excludeList, p):
+                        d[p] = File(p)
         return d
 
+    # begin nocover
     def _globalTrace(self, frame, event, arg):
         """
             This method will produce incorrect coverage results in Python
@@ -159,6 +154,7 @@ class Coverage:
 
     def stop(self):
         sys.settrace(None)
+    # end nocover
 
     def getGlobalStats(self):
         """
@@ -189,7 +185,7 @@ class Coverage:
         files.reverse()
         for f in files:
             lst.append(
-                "[%-4s] [%-4s] [%-6.5s%%]:     %s  \n" % (
+                "[%-4s] [%-4s] [%-6.5s%%]     %s  \n" % (
                     f.numExecuted,
                     f.numExecutable,
                     f.percentage,

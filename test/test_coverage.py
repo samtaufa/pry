@@ -13,6 +13,14 @@ class uFile(libpry.TestTree):
         l = f.getLines(code)
         assert l == set([2, 3, 4, 5, 6, 8])
 
+    def test_getLines_empty(self):
+        f = libpry.coverage.File(None)
+        fname = "covfiles/empty.py"
+        d = open(fname).read()
+        code = compile(d, fname, "exec")
+        l = f.getLines(code)
+        assert l == set([])
+
     def test_getExclusions(self):
         f = libpry.coverage.File(None)
         fname = "covfiles/exclusions.py"
@@ -35,10 +43,21 @@ class uFile(libpry.TestTree):
         f.path = "/foo/bar.py"
         assert f.nicePath("/foo") == "bar.py"
 
+    def test_cmp(self):
+        f1 = libpry.coverage.File("testmodule/test_a.py")
+        f2 = libpry.coverage.File("testmodule/test_a.py")
+        f1.executed.add(f1.executable.pop())
+        assert cmp(f1, f2)
+
+    def test_annotated(self):
+        f = libpry.coverage.File("testmodule/test_a.py")
+        assert f.getAnnotation()
+
     def test_stats(self):
         c = libpry.coverage.File(None)
         c.executable = set([1, 2, 3, 4])
         c.executed = set([1, 2])
+        c.exclusions = set([])
         assert c.numExecutable == 4
         assert c.numExecuted == 2
         assert c.notExecuted == set([3, 4])
@@ -49,11 +68,21 @@ class uFile(libpry.TestTree):
 
 
 class uCoverage(libpry.TestTree):
+    def setUp(self):
+        self.c = libpry.coverage.Coverage("testmodule")
+
     def test_getFileDict(self):
-        c = libpry.coverage.Coverage("testmodule")
-        assert len(c.getFileDict("testmodule", ["testmodule/mod_one.py"])) == 4
+        assert len(self.c.getFileDict("testmodule", ["testmodule/mod_one.py"])) == 4
 
+    def test_getFileDict(self):
+        assert self.c.statStr()
 
+    def test_getGlobalStats(self):
+        assert self.c.getGlobalStats()
+
+    def test_getGlobalStats_empty(self):
+        c = libpry.coverage.Coverage("nonexistent")
+        assert c.getGlobalStats()
 
 
 tests = [
