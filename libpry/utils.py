@@ -1,5 +1,30 @@
 import os.path, fnmatch
 
+def summariseList(lst):
+    """
+        Takes a sorted list of numbers, and returns a summary.
+        Eg. [1, 2, 3, 4, 9] -> [(1, 4), 9]
+            [1, 2, 3, 7, 8, 9] -> [(1, 3), (7, 9)]
+    """
+    if len(lst) < 2:
+        return lst
+    ranges = []
+    start = 0
+    for i in range(1, len(lst)):
+        if (lst[i] - lst[i-1]) > 1:
+            if (i-1) == start:
+                start = i
+                ranges.append(lst[i-1])
+            else:
+                ranges.append((lst[start], lst[i-1]))
+                start = i
+    if lst[start] == lst[i]:
+        ranges.append(lst[i])
+    else:
+        ranges.append((lst[start], lst[i]))
+    return ranges
+
+
 def isPathContained(outer, inner):
     """
        Does inner lie "within" outer?

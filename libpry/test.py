@@ -512,8 +512,6 @@ class DirNode(TestTree):
 
     def tearDownAll(self):
         self._post()
-        if self.coverage:
-            self.coverage.finalise()
 
     def __repr__(self):
         return "DirNode: %s"%self.dirPath
