@@ -91,14 +91,11 @@ class _OutputOne:
             )
 
         if root.cover:
-            lst.append("\n\n")
-            lst.append("                    Coverage\n")
-            lst.append("                    ========\n")
-            lst.append("\n")
             for i in root.preOrder():
                 if hasattr(i, "coverage") and i.coverage:
-                    lst.append(i.coverage.statStr())
-                    #t.coverageSummary()
+                    lst.append("\n")
+                    lst.append("> %s\n"%i.dirPath)
+                    lst.append(i.coverage.coverageReport())
         return "".join(lst)
 
 
@@ -136,6 +133,8 @@ class _Output:
         def printClosure(*args, **kwargs):
             if self.fp:
                 self.fp.write(meth(*args, **kwargs))
+                # Defeat buffering
+                self.fp.flush()
         return printClosure
 
 
@@ -541,7 +540,9 @@ class RootNode(TestTree):
                 for i in files:
                     if fnmatch.fnmatch(i, _TestGlob):
                         dirset.add(root)
-            for i in dirset:
+            l = list(dirset)
+            l.sort()
+            for i in l:
                 self.addChild(DirNode(i, self.cover))
         else:
             self.addChild(DirNode(path, self.cover))

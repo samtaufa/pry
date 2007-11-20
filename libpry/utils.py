@@ -1,4 +1,4 @@
-import os.path, fnmatch
+import os.path, fnmatch, struct, fcntl, termios, os
 
 def summariseList(lst):
     """
@@ -60,6 +60,16 @@ def isStringLike(anobj):
     else:
         return 1
 
+
+def isNumeric(obj):
+    try:
+        obj + 0
+    except:
+        return 0
+    else:
+        return 1
+
+
 def _splitSpec(spec):
     """ 
         Takes an input specification, and returns a (path, pattern) tuple.
@@ -93,3 +103,15 @@ def _splitSpec(spec):
     if target and pattern == "py":
         pattern = ""
     return target, pattern
+
+
+
+# begin nocover
+def terminalWidth():
+    try:
+        cr = struct.unpack('hh', fcntl.ioctl(0, termios.TIOCGWINSZ, '1234'))
+    except IOError:
+        cr = None
+    if not cr:
+        return 80
+    return int(cr[1])

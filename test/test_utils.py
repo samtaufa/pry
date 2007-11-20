@@ -41,6 +41,13 @@ class uisStringLike(libpry.TestTree):
         assert not libpry.utils.isStringLike((1, 2, 3))
         assert not libpry.utils.isStringLike(["1", "2", "3"])
 
+
+class uisNumeric(libpry.TestTree):
+    def test_all(self):
+        assert not libpry.utils.isNumeric("foo")
+        assert libpry.utils.isNumeric(1)
+
+
 class u_splitSpec(libpry.TestTree):
     def test_simple(self):
         assert libpry.utils._splitSpec("foo") == ('', "foo")
@@ -77,9 +84,16 @@ class u_splitSpec(libpry.TestTree):
                 )
 
 
+class u_terminalWidth(libpry.TestTree):
+    def test_all(self):
+        assert libpry.utils.terminalWidth()
+
+
 tests = [
     uisStringLike(),
+    uisNumeric(),
     u_splitSpec(),
     uisPathContained(),
     usummariseList(),
+    u_terminalWidth()
 ]

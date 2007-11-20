@@ -15,7 +15,7 @@ class File:
             self.executed = set()
 
     def __cmp__(self, other):
-        c = cmp(self.percentage, other.percentage)
+        c = cmp(other.percentage, self.percentage)
         if c == 0:
             return cmp(self.path, other.path)
         return c
@@ -29,6 +29,28 @@ class File:
         if fname[0] == "/":
             fname = fname[1:]
         return fname
+
+    def prettyRanges(self, ranges, leftMargin, width):
+        """
+            Return a nicely formatted range string.
+        """
+        lst = []
+        current = 0
+        maximum = width - leftMargin
+        lst.append(" "*(leftMargin-1))
+        for i in ranges:
+            if utils.isNumeric(i):
+                s = "%s"%(i)
+            else:
+                s = "[%s...%s]"%(i[0], i[1])
+            if (current + len(s) + 1) > maximum:
+                if current:
+                    lst.append("\n")
+                    lst.append(" "*(leftMargin-1))
+                current = 0
+            current = current + len(s) + 1
+            lst.append(" %s"%s)
+        return "".join(lst)
 
     @property
     def numExecutable(self):
@@ -180,29 +202,37 @@ class Coverage:
                     "percentage": perc
                 }
 
-    def statStr(self):
+    def coverageReport(self):
         lst = [
-            "[run ] [tot ] [percent]\n"
-            "=======================\n"
+            "[tot ] [run ] [percent]\n",
+            "-----------------------\n",
         ]
         files = self.fileDict.values()
         files.sort()
-        files.reverse()
         for f in files:
             lst.append(
                 "[%-4s] [%-4s] [%-6.5s%%]     %s  \n" % (
-                    f.numExecuted,
                     f.numExecutable,
+                    f.numExecuted,
                     f.percentage,
                     f.nicePath(self.coveragePath),
                 )
             )
             if f.notExecuted:
-                lst.append("                            ")
-                for i in f.notExecutedRanges:
-                    try:
-                        lst.append("[%s...%s] "%(i[0], i[1]))
-                    except:
-                        lst.append("%s "%(i))
+                lst.append(
+                    f.prettyRanges(
+                        f.notExecutedRanges,
+                        28,
+                        utils.terminalWidth()
+                    )
+                )
                 lst.append("\n")
+        lst.append("-----------------------\n")
+        s = self.getGlobalStats()
+        lst.append("[%-4s] [%-4s] [%-6.5s%%]\n"%(
+                        s["allStatements"],
+                        s["statementsRun"],
+                        s["percentage"],
+                    )
+                )
         return "".join(lst)

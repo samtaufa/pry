@@ -66,6 +66,17 @@ class uFile(libpry.TestTree):
         c.executable = set()
         assert c.percentage == 100.0
 
+    def test_prettyRanges(self):
+        c = libpry.coverage.File(None)
+        out = c.prettyRanges([1, 2, (3, 4)], 1, 5)
+        assert out == ' 1 2\n [3...4]'
+        
+        out = c.prettyRanges([1, 2, 3, 4], 1, 5)
+        assert out == ' 1 2\n 3 4'
+
+        out = c.prettyRanges([11111, 22222, 33333], 1, 5)
+        assert out == ' 11111\n 22222\n 33333'
+
 
 class uCoverage(libpry.TestTree):
     def setUp(self):
@@ -76,8 +87,8 @@ class uCoverage(libpry.TestTree):
         r = self.c.getFileDict("testmodule/mod_one.py", [])
         assert len(r) == 1
 
-    def test_statStr(self):
-        assert self.c.statStr()
+    def test_coverageReport(self):
+        assert self.c.coverageReport()
 
     def test_getGlobalStats(self):
         assert self.c.getGlobalStats()

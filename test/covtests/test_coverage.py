@@ -94,7 +94,7 @@ class uCoverage(libpry.TestTree):
     def test_getGlobalStats(self):
         mycov = libpry.coverage.Coverage("testUnit/getGlobalStats.py")
         mycov.start()
-        import testUnit.getGlobalStats
+        reload(testUnit.getGlobalStats)
         testUnit.getGlobalStats.foo()
         mycov.stop()
         expected = {
@@ -124,12 +124,12 @@ class uCoverage(libpry.TestTree):
         annotatedFile = open("./testUnit/getAnnotation.py.annotated").read()
         assert f.getAnnotation() == annotatedFile
 
-    def test_statStr(self):
+    def test_coverageReport(self):
         self.cov.start()
         import testUnit.getGlobalStats
         testUnit.getGlobalStats.foo()
         self.cov.stop()
-        self.cov.statStr()
+        self.cov.coverageReport()
 
 
 tests = [
