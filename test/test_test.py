@@ -322,21 +322,23 @@ class uTestTree(libpry.test.TestTree):
 class uDirNode(libpry.test.TestTree):
     def setUp(self):
         self.cwd = os.getcwd()
+        self.d = libpry.test.DirNode("testmodule", False)
 
     def tearDown(self):
         os.chdir(self.cwd)
         
     def test_init(self):
-        self.d = libpry.test.DirNode("testmodule", False)
         assert len(self.d.search("test_one")) == 2
 
+    def test_init(self):
+        d = libpry.test.DirNode("testmodule/test_a.py", False)
+        assert len(d.search("test_one")) == 1
+
     def test_run(self):
-        self.d = libpry.test.DirNode("testmodule", False)
         self.d.run(zero)
 
-    def tttest_coverage(self):
-        self.d = libpry.test.DirNode("testmodule", True)
-        self.d.run(zero)
+    def test_repr(self):
+        repr(self.d)
 
 
 class uRootNode(libpry.test.TestTree):
@@ -417,6 +419,13 @@ class u_Output(libpry.test.TestTree):
         assert isinstance(o.o, libpry.test._OutputThree)
 
 
+
+class uFileNode(libpry.test.TestTree):
+    def test_repr(self):
+        n = self["root"].search("testmodule/test_a")[0]
+        repr(n)
+
+
 class uTestWrapper(libpry.test.TestTree):
     def test_repr(self):
         def x(): pass
@@ -431,6 +440,7 @@ tests = [
         uOutput(libpry.test._OutputOne),
         uOutput(libpry.test._OutputTwo),
         uOutput(libpry.test._OutputThree),
+        uFileNode(),
     ],
     uTestNode(),
     uRootNode(),
