@@ -490,7 +490,9 @@ class DirNode(TestTree):
                 True if cover is DUMMY else False
             )
             self.coverage.start()
-        for i in os.listdir("."):
+        l = os.listdir(".")
+        l.sort()
+        for i in l:
             if fnmatch.fnmatch(i, glob):
                 self.addChild(FileNode(path, i, self.magic))
         self._post()
