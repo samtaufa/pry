@@ -23,9 +23,9 @@ def main():
     parser.add_option("-s", "--stats",
                       action="store_true", dest="stats",
                       help="Give coverage stats")
-    parser.add_option("-m", "--benchmark",
-                      action="store", dest="benchmark", type="int", default=0,
-                      help="Number of benchmark iterations.")
+    parser.add_option("-n", "--benchmark",
+                      action="store", dest="benchmark", type="int", default=1,
+                      help="Run each test N times.")
     parser.add_option("-q", "--quiet",
                       action="store_true", dest="quiet",
                       help="Quiet")
@@ -47,8 +47,8 @@ def main():
     group.add_option(
                         "-p", "--profile",
                         action="store_true", dest="profile",
-                        help="Do a profiling run. Can be used"
-                        " in conjunction with -m to specify multiple runs."
+                        help="Do a profiling run. Usually used"
+                        " in conjunction with -n to specify multiple runs."
                     )
     group.add_option(
                         "", "--profile-sort",
@@ -107,7 +107,11 @@ def main():
         print "Total: %s"%len(r.tests())
         sys.exit()
     else:
-        r.run(output)
+        if options.profile:
+            p = options.profile_sort
+        else:
+            p = None
+        r.run(output, options.benchmark, p)
         output.final(r)
     
 

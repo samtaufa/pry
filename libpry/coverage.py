@@ -110,7 +110,10 @@ class File:
                 elif m.group(1) == "end" and nocover == 1:
                     nocover = False
                 else:
-                    s = "Unbalanced nocover directive at line %s of %s"%(i, filename)
+                    s = "Unbalanced nocover directive at line %s of %s"%(
+                            i,
+                            filename
+                        )
                     raise ValueError, s
             else:
                 if nocover:
@@ -119,8 +122,7 @@ class File:
 
     def getAnnotation(self):
         """
-            Returns a dictionary with a list of snippets of text. Each snippet
-            is an annotated list of un-run lines.
+            Returns version of the source file with un-run lines annotated.
         """
         lines = open(self.path, "r").readlines()
         for i in self.notExecuted:

@@ -4,7 +4,7 @@
     Each test is a node in a tree of tests. Each test can have a setUp and
     tearDown method - these get run before and after each child node is run.
 """
-import sys, time, traceback, os, fnmatch, config
+import sys, time, traceback, os, fnmatch, config, cProfile, pstats
 import tinytree
 import coverage
 
@@ -90,11 +90,20 @@ class _OutputOne(_OutputZero):
 
     def final(self, root):
         lst = ["\n"]
+        if isinstance(root.goState, Error):
+            root.goState.msg = None
+            s = [
+                    "Internal error:",
+                    str(root.goState)
+                ]
+            return "".join(s)
+
         errs = root.allError()
         if errs:
             lst.append("ERRORS\n======\n")
             for i in errs:
                 lst.append(str(i.getError()))
+
         if root.goState and not root.isError():
             infostr = []
             if errs:
@@ -103,9 +112,9 @@ class _OutputOne(_OutputZero):
             if notrun:
                 infostr.append("skip: %s"%len(notrun))
             lst.append(
-                "%s tests %s - %.3fs\n"%(
+                "%s tests %s- %.3fs\n"%(
                     len(root.tests()),
-                    "(%s)"%", ".join(infostr) if infostr else "",
+                    "(%s) "%", ".join(infostr) if infostr else "",
                     root.goState.time
                 )
             )
@@ -170,7 +179,9 @@ class _OutputTwo(_OutputOne):
 
 
 class _OutputThree(_OutputTwo):
-    pass
+    def nodePass(self, node):
+        if isinstance(node, TestNode):
+            return "OK (%.3fs)"%node.callState.time
 
 
 class _Output:
@@ -224,7 +235,7 @@ class _TestBase(tinytree.Tree):
     def __setitem__(self, key, value):
         self._ns[key] = value
 
-    def _run(self, meth, dstObj, name, *args, **kwargs):
+    def _run(self, meth, dstObj, name, repeat, profile, *args, **kwargs):
         """
             Utility method that runs a callable, and sets a State object.
             
@@ -232,9 +243,15 @@ class _TestBase(tinytree.Tree):
             dstObj:     The object on which to set the state variable
             meth:       The name of the method to call
         """
+        if profile:
+            prof = cProfile.Profile()
         try:
             start = time.time()
-            r = meth(*args, **kwargs)
+            for i in xrange(repeat):
+                if profile:
+                    r = prof.runcall(meth, *args, **kwargs)
+                else:
+                    r = meth(*args, **kwargs)
             stop = time.time()
         except Exception, e:
             setattr(
@@ -246,6 +263,8 @@ class _TestBase(tinytree.Tree):
             )
             return True
         if r is not NOTRUN:
+            if profile:
+                dstObj.profStats = pstats.Stats(prof).sort_stats(profile)
             setattr(dstObj, name + "State", OK(dstObj, stop-start))
         return False
 
@@ -313,6 +332,15 @@ class _TestBase(tinytree.Tree):
             if seen:
                 lst.extend(i.tests())
         return [i for i in lst if not i is self]
+
+    def hasProfStats(self):
+        """
+            Does this tree have profile statistics?
+        """
+        for i in self.tests():
+            if i.profStats:
+                return True
+        return False
 
     def isError(self):
         """
@@ -455,34 +483,34 @@ class TestTree(_TestBase):
                     self.tearDownState,
                 ]
 
-    def run(self, output):
+    def run(self, output, repeat, profile):
         """
             Run the tests contained in this suite.
         """
-        if self._run(self.setUpAll, self, "setUpAll"):
+        if self._run(self.setUpAll, self, "setUpAll", 1, None):
             output.setUpAllError(self)
             return
         for i in self.children:
             output.nodePre(i)
 
-            if self._run(self.setUp, i, "setUp"):
+            if self._run(self.setUp, i, "setUp", 1, None):
                 output.setUpError(i)
                 output.nodePost(i)
                 return
 
-            if i.run(output):
+            if i.run(output, repeat, profile):
                 output.nodeError(i)
             else:
                 output.nodePass(i)
 
-            if self._run(self.tearDown, i, "tearDown"):
+            if self._run(self.tearDown, i, "tearDown", 1, None):
                 output.tearDownError(i)
                 output.nodePost(i)
                 return
 
             output.nodePost(i)
 
-        if self._run(self.tearDownAll, self, "tearDownAll"):
+        if self._run(self.tearDownAll, self, "tearDownAll", 1, None):
             output.tearDownAllError(self)
             return
 
@@ -497,11 +525,13 @@ class TestNode(_TestBase):
     # An OK object if setUp succeeded, an Error object if it failed, and None
     # if no tearDown was run.
     tearDownState = None
+    # A pstats.Stats object if profile was run, else None
+    profStats = None
     def __init__(self, name):
         _TestBase.__init__(self, None, name=name)
 
-    def run(self, output):
-        return self._run(self.__call__, self, "call")
+    def run(self, output, repeat, profile):
+        return self._run(self.__call__, self, "call", repeat, profile)
 
     def _states(self):
         return [
@@ -628,11 +658,11 @@ class RootNode(TestTree):
         TestTree.__init__(self, name=None)
         self.cover = cover
 
-    def run(self, output):
-        self._run(self.go, self, "go", output)
+    def run(self, output, repeat, profile):
+        self._run(self.go, self, "go", 1, profile, output, repeat, profile)
 
-    def go(self, output):
-        TestTree.run(self, output)
+    def go(self, output, repeat, profile):
+        TestTree.run(self, output, repeat, profile)
 
     def addPath(self, path, recurse):
         if recurse:
