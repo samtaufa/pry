@@ -90,7 +90,11 @@ def main():
     else:
         verbose = options.verbose
 
-    r = libpry.RootNode(coverage)
+    if options.profile:
+        p = options.profile_sort
+    else:
+        p = None
+    r = libpry.RootNode(coverage, p)
     r.addPath(path or ".", options.recurse)
     if pattern:
         r.mark(pattern)
@@ -107,11 +111,7 @@ def main():
         print "Total: %s"%len(r.tests())
         sys.exit()
     else:
-        if options.profile:
-            p = options.profile_sort
-        else:
-            p = None
-        r.run(output, options.benchmark, p)
+        r.run(output, options.benchmark)
         output.final(r)
     
 

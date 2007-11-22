@@ -4,7 +4,7 @@
     Each test is a node in a tree of tests. Each test can have a setUp and
     tearDown method - these get run before and after each child node is run.
 """
-import sys, time, traceback, os, fnmatch, config, cProfile, pstats
+import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
 import tinytree
 import coverage
 
@@ -100,12 +100,14 @@ class _OutputOne(_OutputZero):
 
         errs = root.allError()
         if errs:
-            lst.append("ERRORS\n======\n")
+            lst.append("\nERRORS\n======\n")
             for i in errs:
                 lst.append(str(i.getError()))
 
         if root.goState and not root.isError():
-            infostr = []
+            infostr = [
+                "pass: %s"%len(root.allPassed())
+            ]
             if errs:
                 infostr.append("fail: %s"%len(errs))
             notrun = root.allNotRun()
@@ -114,13 +116,9 @@ class _OutputOne(_OutputZero):
             lst.append(
                 "%s tests %s- %.3fs\n"%(
                     len(root.tests()),
-                    "(%s) "%", ".join(infostr) if infostr else "",
+                    "(%s) "%", ".join(infostr),
                     root.goState.time
                 )
-            )
-        else:
-            lst.append(
-                "No tests run.\n"
             )
 
         if root.cover:
@@ -129,6 +127,29 @@ class _OutputOne(_OutputZero):
                     lst.append("\n")
                     lst.append("> %s\n"%i.dirPath)
                     lst.append(i.coverage.coverageReport())
+        
+        # Profile printing is a massive kludge, mostly because the pstats
+        # module is an awful, awful piece of software, perversely designed to
+        # be impossible to sensibly interact with. One day, in our Copious
+        # Spare Time we might rewrite it, but for now we kludge.
+        if root.profile:
+            lst.append("\nPROFILE\n=======\n")
+            for i in root.allPassed():
+                s = i.profStats
+                lst.append("%s\n"%i.fullPath())
+                lst.append("   %s function calls"%(s.total_calls))
+                if s.total_calls != s.prim_calls:
+                    lst.append(" (%d primitive calls)"%s.prim_calls)
+                lst.append(" in %.3f CPU seconds"%s.total_tt)
+                width, funcs = s.get_print_list([])
+                s.print_title()
+                for f in funcs:
+                    # We don't want to know about libpry itself.
+                    if not "/libpry/" in f[0]:
+                        s.print_line(f)
+                lst.append("\n")
+                lst.append(s.stream.getvalue())
+                lst.append("\n\n")
         return "".join(lst)
 
 
@@ -204,7 +225,7 @@ class _Output:
             if self.fp:
                 s = meth(*args, **kwargs)
                 if s:
-                    self.fp.write(meth(*args, **kwargs))
+                    self.fp.write(s)
                     # Defeat buffering
                     self.fp.flush()
         return printClosure
@@ -264,7 +285,9 @@ class _TestBase(tinytree.Tree):
             return True
         if r is not NOTRUN:
             if profile:
-                dstObj.profStats = pstats.Stats(prof).sort_stats(profile)
+                pstream = cStringIO.StringIO()
+                dstObj.profStats = pstats.Stats(prof, stream=pstream)
+                dstObj.profStats.sort_stats(profile)
             setattr(dstObj, name + "State", OK(dstObj, stop-start))
         return False
 
@@ -318,11 +341,11 @@ class _TestBase(tinytree.Tree):
 
     def allSkip(self):
         """
-            If we skipped from this test onwards, how many tests would we skip?
+            If we skipped from this test onwards, not including this test
+            itself, how many tests would we skip?
 
             This amounts to a) and all our children, and b) all our "right"
-            siblings, and all their children. This node itself is NOT counted
-            towards the total.
+            siblings, and all their children. 
         """
         lst = []
         seen = False
@@ -335,7 +358,7 @@ class _TestBase(tinytree.Tree):
 
     def hasProfStats(self):
         """
-            Does this tree have profile statistics?
+            Does this node or any of its children have profile statistics?
         """
         for i in self.tests():
             if i.profStats:
@@ -654,15 +677,23 @@ class RootNode(TestTree):
         This node is the parent of all tests.
     """
     goState = None
-    def __init__(self, cover):
+    def __init__(self, cover, profile):
         TestTree.__init__(self, name=None)
         self.cover = cover
+        self.profile = profile
 
-    def run(self, output, repeat, profile):
-        self._run(self.go, self, "go", 1, profile, output, repeat, profile)
-
-    def go(self, output, repeat, profile):
-        TestTree.run(self, output, repeat, profile)
+    def run(self, output, repeat):
+        self._run(
+            TestTree.run,
+            self,
+            "go",
+            1,
+            False,
+            self,
+            output,
+            repeat,
+            self.profile
+        )
 
     def addPath(self, path, recurse):
         if recurse:

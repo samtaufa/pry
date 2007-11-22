@@ -2,7 +2,7 @@ import fnmatch, cStringIO, os
 import libpry.test
 import libpry.helpers
 
-zero = libpry.test._Output(libpry.test.RootNode(False), 0)
+zero = libpry.test._Output(libpry.test.RootNode(False, None), 0)
 
 class TSetupCheckRoot(libpry.test.TestTree):
     def __init__(self, *args, **kwargs):
@@ -391,14 +391,14 @@ class uDirNode(libpry.test.TestTree):
 
 class uRootNode(libpry.test.TestTree):
     def test_init(self):
-        r = libpry.test.RootNode(False)
+        r = libpry.test.RootNode(False, None)
         r.addPath("testmodule", True)
         assert r.search("test_one")
         assert r.search("testmodule/test_a.uOne.test_one")
         assert r.search("testmodule/two/test_two")
         assert not r.search("nonexistent")
 
-        r = libpry.test.RootNode(False)
+        r = libpry.test.RootNode(False, None)
         r.addPath("testmodule", False)
         assert not r.search("testmodule/two/test_two")
         assert r.search("test_one")
@@ -408,7 +408,7 @@ class uRootNode(libpry.test.TestTree):
             raise ValueError
         except:
             pass
-        r = libpry.test.RootNode(False)
+        r = libpry.test.RootNode(False, None)
         o = libpry.test._OutputOne(r)
         r.goState = libpry.test.Error(r, "")
         o.final(r)
@@ -416,15 +416,20 @@ class uRootNode(libpry.test.TestTree):
 
 class FullTree(libpry.test.TestTree):
     def setUp(self):
-        r = libpry.test.RootNode(False)
+        r = libpry.test.RootNode(False, None)
         r.addPath("testmodule", True)
         self["root"] = r
         self["node"] = r.search("test_one")[0]
 
-        c = libpry.test.RootNode(libpry.test.DUMMY)
+        c = libpry.test.RootNode(libpry.test.DUMMY, None)
         c.addPath("testmodule", True)
-        c.run(zero, 1, None)
+        c.run(zero, 1)
         self["coverageRoot"] = c
+
+        c = libpry.test.RootNode(False, "calls")
+        c.addPath("testmodule", True)
+        c.run(zero, 1)
+        self["profileRoot"] = c
 
 
 class uOutput(libpry.test.TestTree):
@@ -435,14 +440,20 @@ class uOutput(libpry.test.TestTree):
     def setUp(self):
         self.output = self.outputClass(self["root"])
         self.coverageOutput = self.outputClass(self["coverageRoot"])
+        self.profileOutput = self.outputClass(self["profileRoot"])
 
     def test_run(self):
-        self["root"].run(self.output, 1, None)
-        self["coverageRoot"].run(self.coverageOutput, 1, None)
+        self["root"].run(self.output, 1)
+        self["coverageRoot"].run(self.coverageOutput, 1)
+        self["profileRoot"].run(self.profileOutput, 1)
 
     def test_final(self):
+        self["root"].run(self.output, 1)
+        self["coverageRoot"].run(self.coverageOutput, 1)
+        self["profileRoot"].run(self.profileOutput, 1)
         self.output.final(self["root"])
         self.output.final(self["coverageRoot"])
+        self.output.final(self["profileRoot"])
 
     
 class uTestNode(libpry.test.TestTree):
@@ -464,7 +475,7 @@ class uTestNode(libpry.test.TestTree):
 
 class u_Output(libpry.test.TestTree):
     def test_construct(self):
-        r = libpry.test.RootNode(False)
+        r = libpry.test.RootNode(False, None)
         o = libpry.test._Output(r, 0)
         assert isinstance(o.o, libpry.test._OutputZero)
 
