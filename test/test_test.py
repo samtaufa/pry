@@ -2,7 +2,7 @@ import fnmatch, cStringIO, os
 import libpry.test
 import libpry.helpers
 
-zero = libpry.test._Output(0)
+zero = libpry.test._Output(libpry.test.RootNode(False), 0)
 
 class TSetupCheckRoot(libpry.test.TestTree):
     def __init__(self, *args, **kwargs):
@@ -93,11 +93,21 @@ def errFunc(): assert None
 class TSetupFailure(libpry.test.TestTree):
     def setUp(self): raise ValueError
     def test_pass(self): pass
+    def test_pass2(self): pass
 
 
 class TTeardownFailure(libpry.test.TestTree):
     def tearDown(self): raise ValueError
     def test_pass(self): pass
+
+
+class uError(libpry.test.TestTree):
+    def test_exc(self):
+        try:
+            raise ValueError
+        except:
+            pass
+        Error(None, None)
 
 
 class uSetupCheck(libpry.test.TestTree):
@@ -144,6 +154,20 @@ class uTestTree(libpry.test.TestTree):
         assert self.t.count() == 5
         assert len(self.t.tests()) == 3
         assert len(self.t.allNotRun()) == 3
+
+    def test_allSkipped(self):
+        assert len(self.t.allSkip()) == len(self.t.tests())
+        x = self.t.search("TTree.test_pass")[0]
+        assert len(x.allSkip()) == 2
+        x = self.t.search("sub")[0]
+        assert len(x.allSkip()) == 2
+        x = self.t.search("test_error")[0]
+        assert len(x.allSkip()) == 1
+        x = self.t.search("test_fail")[0]
+        assert len(x.allSkip()) == 0
+
+    def test_maxPathLen(self):
+        assert self.t.maxPathLen() == 20
 
     def test_hasTests(self):
         assert self.t.hasTests()
@@ -211,9 +235,9 @@ class uTestTree(libpry.test.TestTree):
         assert t.children[0].isError()
         assert len(t.allNotRun()) == 1
 
-    def test_setupFailure(self):
+    def test_setupFailure2(self):
         t = TTeardownFailure()
-        libpry.helpers.raises(libpry.test.Skip, t.run, zero)
+        t.run(zero)
         assert isinstance(t.children[0].tearDownState, libpry.test.Error)
         assert len(t.allNotRun()) == 0
 
@@ -372,10 +396,15 @@ class FullTree(libpry.test.TestTree):
 class uOutput(libpry.test.TestTree):
     def __init__(self, outputClass):
         libpry.test.TestTree.__init__(self, name=outputClass.__name__)
-        self.output = outputClass()
+        self.outputClass = outputClass
+
+    def setUp(self):
+        self.output = self.outputClass(self["root"])
+        self.coverageOutput = self.outputClass(self["coverageRoot"])
 
     def test_run(self):
         self["root"].run(self.output)
+        self["coverageRoot"].run(self.coverageOutput)
 
     def test_final(self):
         self.output.final(self["root"])
@@ -386,9 +415,7 @@ class uTestNode(libpry.test.TestTree):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
-        x.run(zero)
-        assert isinstance(x.callState, libpry.test.Error)
-        str(x.callState)
+        assert x.run(zero)
 
     def test_run_pass(self):
         t = TTree()
@@ -403,19 +430,20 @@ class uTestNode(libpry.test.TestTree):
 
 class u_Output(libpry.test.TestTree):
     def test_construct(self):
-        o = libpry.test._Output(0)
+        r = libpry.test.RootNode(False)
+        o = libpry.test._Output(r, 0)
         assert isinstance(o.o, libpry.test._OutputZero)
 
-        o = libpry.test._Output(1)
+        o = libpry.test._Output(r, 1)
         assert isinstance(o.o, libpry.test._OutputOne)
 
-        o = libpry.test._Output(2)
+        o = libpry.test._Output(r, 2)
         assert isinstance(o.o, libpry.test._OutputTwo)
 
-        o = libpry.test._Output(3)
+        o = libpry.test._Output(r, 3)
         assert isinstance(o.o, libpry.test._OutputThree)
 
-        o = libpry.test._Output(999)
+        o = libpry.test._Output(r, 999)
         assert isinstance(o.o, libpry.test._OutputThree)
 
 

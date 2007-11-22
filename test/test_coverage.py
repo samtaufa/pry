@@ -83,7 +83,7 @@ class uCoverage(libpry.TestTree):
         self.c = libpry.coverage.Coverage("testmodule")
 
     def test_getFileDict(self):
-        assert len(self.c.getFileDict("testmodule", ["testmodule/mod_one.py"])) == 4
+        assert len(self.c.getFileDict("testmodule", ["testmodule/mod_one.py"])) == 5
         r = self.c.getFileDict("testmodule/mod_one.py", [])
         assert len(r) == 1
 

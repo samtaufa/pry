@@ -18,6 +18,8 @@ def raises(exc, callableObj, *args, **kwargs):
                 return
             else:
                 raise AssertionError(
-                    "Expected %s, but caught %s"%(exc.__name__, v)
+                    "Expected %s, but caught %s %s"%(
+                        exc.__name__, v.__class__.__name__, str(v)
+                    )
                 )
     raise AssertionError("No exception raised.")

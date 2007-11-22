@@ -89,13 +89,14 @@ def main():
         verbose = 0
     else:
         verbose = options.verbose
-    output = libpry.test._Output(verbose)
 
     r = libpry.RootNode(coverage)
     r.addPath(path or ".", options.recurse)
     if pattern:
         r.mark(pattern)
     r.prune()
+
+    output = libpry.test._Output(r, verbose)
 
     if options.list:
         r.printStructure()

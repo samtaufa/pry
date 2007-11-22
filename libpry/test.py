@@ -11,9 +11,6 @@ import coverage
 _TestGlob = "test_*.py"
 
 
-class Skip(Exception): pass
-
-
 class Error:
     """
         Error tests False.
@@ -26,8 +23,10 @@ class Error:
             next = self.tb.tb_next
             if next:
                 self.tb = next
+            # begin nocover
             else:
                 break
+            # end nocover
         # We lose information if we call format_exception in __str__
         self.s = traceback.format_exception(
                 self.exctype, self.excvalue, self.tb
@@ -35,9 +34,10 @@ class Error:
 
     def __str__(self):
         strs = [
-                 "Error in %s:"%self.msg,
-                 "    %s"%self.node.fullPath()
+                 "%s"%self.node.fullPath(),
                ]
+        if self.msg:
+            strs.append("    %s:"%self.msg)
         for i in self.s:
             strs.append("    %s"%i.rstrip())
         strs.append("\n")
@@ -53,36 +53,60 @@ class OK:
 
 
 class _OutputZero:
-    def nodePre(self, node): return ""
-    def nodeError(self, node): return ""
-    def nodePass(self, node): return ""
-    def final(self, node): return ""
+    def __init__(self, root):
+        self.root = root
+        self.maxname = self.root.maxPathLen()
+
+    def nodePre(self, node): pass
+    def nodePost(self, node): pass
+    def nodeError(self, node): pass
+    def nodePass(self, node): pass
+    def setUpError(self, node): pass
+    def tearDownError(self, node): pass
+    def final(self, node): pass
+    def tearDownAllError(self, node): pass
+    def setUpAllError(self, node): pass
 
 
-class _OutputOne:
-    def nodePre(self, node): return ""
-
+class _OutputOne(_OutputZero):
     def nodeError(self, node):
         return "E"
 
+    def setUpError(self, node):
+        return "[S]"
+
+    def tearDownError(self, node):
+        return "[T]"
+
     def nodePass(self, node):
-        return "."
+        if isinstance(node, TestNode):
+            return "."
+
+    def tearDownAllError(self, node):
+        return "[TA]"
+
+    def setUpAllError(self, node):
+        return "[SA]"
 
     def final(self, root):
         lst = ["\n"]
-        for i in root.preOrder():
-            if i.isError():
+        errs = root.allError()
+        if errs:
+            lst.append("ERRORS\n======\n")
+            for i in errs:
                 lst.append(str(i.getError()))
-        if root.runState and not root.isError():
+        if root.goState and not root.isError():
             infostr = []
-            errs = root.allError()
             if errs:
-                infostr.append ("fail: %s"%len(errs))
+                infostr.append("fail: %s"%len(errs))
+            notrun = root.allNotRun()
+            if notrun:
+                infostr.append("skip: %s"%len(notrun))
             lst.append(
                 "%s tests %s - %.3fs\n"%(
                     len(root.tests()),
-                    "(%s)"%"".join(infostr) if infostr else "",
-                    root.runState.time
+                    "(%s)"%", ".join(infostr) if infostr else "",
+                    root.goState.time
                 )
             )
         else:
@@ -101,13 +125,46 @@ class _OutputOne:
 
 class _OutputTwo(_OutputOne):
     def nodePre(self, node):
-        return "%s ...\t"%node.fullPath()
+        if isinstance(node, TestNode):
+            return "%s ...\t"%node.fullPath()
+
+    def nodePost(self, node):
+        if isinstance(node, TestNode):
+            return "\n"
 
     def nodeError(self, node):
-        return "FAIL\n"
+        if isinstance(node, TestNode):
+            return "FAIL"
 
     def nodePass(self, node):
-        return "OK\n"
+        if isinstance(node, TestNode):
+            return "OK"
+
+    def setUpError(self, node):
+        cnt = len(node.allSkip())
+        return "STOP\n\t** setUp failed, skipping %s tests"%cnt
+
+    def setUpAllError(self, node):
+        cnt = len(node.tests())
+        lst = [
+            "%s ...\tSTOP\n"%node.fullPath(),
+            "\t** setUpAll failed, skipping %s tests\n"%cnt
+        ]
+        return "".join(lst)
+
+    def tearDownAllError(self, node):
+        lst = [
+            "%s ...\tSTOP\n"%node.fullPath(),
+            "\t** tearDownAll failed\n"
+        ]
+        return "".join(lst)
+
+    def tearDownError(self, node):
+        cnt = len(node.allSkip())
+        add = ""
+        if cnt:
+            add = ", skipping %s tests"%cnt
+        return "\n\t** tearDown failed%s"%add
 
 
 class _OutputThree(_OutputTwo):
@@ -115,26 +172,28 @@ class _OutputThree(_OutputTwo):
 
 
 class _Output:
-    def __init__(self, verbosity, fp=sys.stdout):
+    def __init__(self, root, verbosity, fp=sys.stdout):
         self.fp = fp
         if verbosity == 0:
-            self.o = _OutputZero()
+            self.o = _OutputZero(root)
         elif verbosity == 1:
-            self.o = _OutputOne()
+            self.o = _OutputOne(root)
         elif verbosity == 2:
-            self.o = _OutputTwo()
+            self.o = _OutputTwo(root)
         elif verbosity == 3:
-            self.o = _OutputThree()
+            self.o = _OutputThree(root)
         else:
-            self.o = _OutputThree()
+            self.o = _OutputThree(root)
 
     def __getattr__(self, attr):
         meth = getattr(self.o, attr)
         def printClosure(*args, **kwargs):
             if self.fp:
-                self.fp.write(meth(*args, **kwargs))
-                # Defeat buffering
-                self.fp.flush()
+                s = meth(*args, **kwargs)
+                if s:
+                    self.fp.write(meth(*args, **kwargs))
+                    # Defeat buffering
+                    self.fp.flush()
         return printClosure
 
 
@@ -163,29 +222,30 @@ class _TestBase(tinytree.Tree):
     def __setitem__(self, key, value):
         self._ns[key] = value
 
-    def _run(self, srcObj, dstObj, meth, *args, **kwargs):
+    def _run(self, meth, dstObj, name, *args, **kwargs):
         """
-            Utility method that runs a callable, and returns a State object.
+            Utility method that runs a callable, and sets a State object.
             
             srcObj:     The object from which to source the method
             dstObj:     The object on which to set the state variable
             meth:       The name of the method to call
         """
-        if meth == "__call__":
-            c = self
-            meth = "call"
-        else:
-            c = getattr(srcObj, meth, None)
-        if not c:
-            return None
         try:
             start = time.time()
-            c(*args, **kwargs)
+            r = meth(*args, **kwargs)
             stop = time.time()
         except Exception, e:
-            setattr(dstObj, meth + "State", Error(srcObj, meth))
-            raise Skip()
-        setattr(dstObj, meth + "State", OK(srcObj, stop-start))
+            setattr(
+                dstObj, name + "State",
+                Error(
+                    dstObj,
+                    "" if name == "call" else name
+                )
+            )
+            return True
+        if r is not NOTRUN:
+            setattr(dstObj, name + "State", OK(dstObj, stop-start))
+        return False
 
     def tests(self):
         """
@@ -196,6 +256,9 @@ class _TestBase(tinytree.Tree):
             if isinstance(i, TestNode):
                 lst.append(i)
         return lst
+
+    def maxPathLen(self):
+        return max([len(i.fullPath()) for i in self.preOrder()])
 
     def hasTests(self):
         """
@@ -216,9 +279,9 @@ class _TestBase(tinytree.Tree):
 
     def allError(self):
         """
-            All test nodes that errored.
+            All nodes that errored.
         """
-        return [i for i in self.tests() if i.isError()]
+        return [i for i in self.preOrder() if i.isError()]
 
     def allPassed(self):
         """
@@ -231,6 +294,23 @@ class _TestBase(tinytree.Tree):
             All test nodes that that have not been run.
         """
         return [i for i in self.tests() if i.isNotRun()]
+
+    def allSkip(self):
+        """
+            If we skipped from this test onwards, how many tests would we skip?
+
+            This amounts to a) and all our children, and b) all our "right"
+            siblings, and all their children. This node itself is NOT counted
+            towards the total.
+        """
+        lst = []
+        seen = False
+        for i in self.siblings():
+            if i is self:
+                seen = True
+            if seen:
+                lst.extend(i.tests())
+        return [i for i in lst if not i is self]
 
     def isError(self):
         """
@@ -253,10 +333,11 @@ class _TestBase(tinytree.Tree):
 
     def isNotRun(self):
         """
-            True if this node has experienced a test failure.
+            True if this node was not run at all. Note that a node that
+            experienced failure during setup will return False.
         """
         for i in self._states():
-            if not i is None:
+            if i is not None:
                 return False
         return True
 
@@ -323,6 +404,7 @@ class _TestBase(tinytree.Tree):
                 print >> outf, i.name
 
 AUTO = object()
+NOTRUN = object()
 
 class TestTree(_TestBase):
     """
@@ -346,9 +428,6 @@ class TestTree(_TestBase):
     # An OK object if teardownAll succeeded, an Error object if it failed, and
     # None if no tearDown was run.
     tearDownAllState = None
-    # An OK object if run succeeded, an Error object if it failed. For a
-    # TestTree object, this should never be an error.
-    runState = None
     def __init__(self, children=None, name=AUTO):
         if self.name:
             name = self.name
@@ -361,29 +440,49 @@ class TestTree(_TestBase):
             if i.startswith(self._testPrefix):
                 self.addChild(TestWrapper(i, getattr(self, i)))
 
+    def setUp(self): return NOTRUN
+    def setUpAll(self): return NOTRUN
+    def tearDown(self): return NOTRUN
+    def tearDownAll(self): return NOTRUN
+
     def _states(self):
         return [
                     self.setUpAllState,
                     self.tearDownAllState,
                     self.setUpState,
                     self.tearDownState,
-                    self.runState,
                 ]
 
     def run(self, output):
         """
             Run the tests contained in this suite.
         """
-        self._run(self, self, "setUpAll")
+        if self._run(self.setUpAll, self, "setUpAll"):
+            output.setUpAllError(self)
+            return
         for i in self.children:
-            self._run(self, i, "setUp")
-            try:
-                self._run(i, self, "run", output)
-            except Skip:
-                output.nodeError(i)
+            output.nodePre(i)
+
+            if self._run(self.setUp, i, "setUp"):
+                output.setUpError(i)
+                output.nodePost(i)
                 return
-            self._run(self, i, "tearDown")
-        self._run(self, self, "tearDownAll")
+
+            if i.run(output):
+                output.nodeError(i)
+            else:
+                output.nodePass(i)
+
+            if self._run(self.tearDown, i, "tearDown"):
+                output.tearDownError(i)
+                output.nodePost(i)
+                return
+
+            output.nodePost(i)
+
+        if self._run(self.tearDownAll, self, "tearDownAll"):
+            output.tearDownAllError(self)
+            return
 
 
 class TestNode(_TestBase):
@@ -400,13 +499,7 @@ class TestNode(_TestBase):
         _TestBase.__init__(self, None, name=name)
 
     def run(self, output):
-        output.nodePre(self)
-        try:
-            self._run(self, self, "__call__")
-        except Skip:
-            output.nodeError(self)
-            return
-        output.nodePass(self)
+        return self._run(self.__call__, self, "call")
 
     def _states(self):
         return [
@@ -524,14 +617,20 @@ class DirNode(TestTree):
 
 # Do a dummy coverage run
 DUMMY = object()
-
 class RootNode(TestTree):
     """
         This node is the parent of all tests.
     """
+    goState = None
     def __init__(self, cover):
         TestTree.__init__(self, name=None)
         self.cover = cover
+
+    def run(self, output):
+        self._run(self.go, self, "go", output)
+
+    def go(self, output):
+        TestTree.run(self, output)
 
     def addPath(self, path, recurse):
         if recurse:
