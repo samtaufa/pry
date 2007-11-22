@@ -699,9 +699,8 @@ class RootNode(TestTree):
         if recurse:
             dirset = set()
             for root, dirs, files in os.walk(path):
-                for i in files:
-                    if fnmatch.fnmatch(i, _TestGlob):
-                        dirset.add(root)
+                if os.path.isfile(os.path.join(root, ".pry")):
+                    dirset.add(root)
             l = list(dirset)
             l.sort()
             for i in l:
