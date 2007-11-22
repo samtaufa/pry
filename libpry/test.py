@@ -126,7 +126,9 @@ class _OutputOne(_OutputZero):
 class _OutputTwo(_OutputOne):
     def nodePre(self, node):
         if isinstance(node, TestNode):
-            return "%s ...\t"%node.fullPath()
+            p = node.fullPath()
+            padding = "."*(self.maxname - len(p))
+            return "%s .%s "%(p, padding)
 
     def nodePost(self, node):
         if isinstance(node, TestNode):
