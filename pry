@@ -94,7 +94,7 @@ def main():
         p = options.profile_sort
     else:
         p = None
-    r = libpry.RootNode(coverage, p)
+    r = libpry.test._RootNode(coverage, p)
     r.addPath(path or ".", options.recurse)
     if pattern:
         r.mark(pattern)

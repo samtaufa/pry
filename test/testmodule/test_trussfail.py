@@ -2,7 +2,7 @@
 import libpry
 
 
-class _Test(libpry.test.TestTree):
+class _Test(libpry.test.AutoTree):
     def test_one(self):
         pass
 
@@ -29,7 +29,7 @@ class uTearDown(_Test):
     def tearDown(self):
         raise ValueError, "This is an intentional error."
 
-class uTearDownOnly(libpry.test.TestTree):
+class uTearDownOnly(libpry.test.AutoTree):
     def tearDown(self):
         raise ValueError, "This is an intentional error."
 

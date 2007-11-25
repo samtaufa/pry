@@ -9,7 +9,7 @@ def err(*args, **kwargs):
 
 def ok(): pass
 
-class uRaises(libpry.TestTree):
+class uRaises(libpry.AutoTree):
     def test_class(self):
         he.raises(ValueError, err, "Hello")
         he.raises(

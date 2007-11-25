@@ -464,7 +464,6 @@ class TestTree(_TestBase):
         Automatically turns methods or arbitrary callables of the form test_*
         into TestNodes.
     """
-    _testPrefix = "test_"
     _base = None
     _exclude = None
     _include = None
@@ -487,11 +486,6 @@ class TestTree(_TestBase):
         elif name is AUTO:
             name = self.__class__.__name__
         _TestBase.__init__(self, children, name)
-        k = dir(self)
-        k.sort()
-        for i in k:
-            if i.startswith(self._testPrefix):
-                self.addChild(TestWrapper(i, getattr(self, i)))
 
     def setUp(self): return NOTRUN
     def setUpAll(self): return NOTRUN
@@ -538,7 +532,24 @@ class TestTree(_TestBase):
             return
 
 
+class AutoTree(TestTree):
+    """
+        Automatically adds methods of the form test_* as child TestNodes.
+    """
+    _testPrefix = "test_"
+    def __init__(self, children=None, name=AUTO):
+        TestTree.__init__(self, children, name=name)
+        k = dir(self)
+        k.sort()
+        for i in k:
+            if i.startswith(self._testPrefix):
+                self.addChild(CallableNode(i, getattr(self, i)))
+
+
 class TestNode(_TestBase):
+    """
+        A node representing an actual runnable test.
+    """
     # An OK object if run succeeded, an Error object if it failed, and None
     # if the test was not run.
     callState = None
@@ -567,7 +578,10 @@ class TestNode(_TestBase):
         raise NotImplementedError
 
 
-class TestWrapper(TestNode):
+class CallableNode(TestNode):
+    """
+        A utility wrapper to create a TestNode from an arbitrary callable.
+    """
     def __init__(self, name, meth):
         TestNode.__init__(self, name)
         self.meth = meth
@@ -576,7 +590,7 @@ class TestWrapper(TestNode):
         self.meth()
 
     def __repr__(self):
-        return "TestWrapper: %s"%self.name
+        return "CallableNode: %s"%self.name
 
 
 class FileNode(TestTree):
@@ -611,7 +625,10 @@ class FileNode(TestTree):
         return "FileNode: %s"%self.filename
 
 
-class DirNode(TestTree):
+class _DirNode(TestTree):
+    """
+        A node representing a directory of tests. 
+    """
     CONF = ".pry"
     def __init__(self, path, cover):
         TestTree.__init__(self, name=None)
@@ -667,12 +684,12 @@ class DirNode(TestTree):
         self._post()
 
     def __repr__(self):
-        return "DirNode: %s"%self.dirPath
+        return "_DirNode: %s"%self.dirPath
 
 
 # Do a dummy coverage run
 DUMMY = object()
-class RootNode(TestTree):
+class _RootNode(TestTree):
     """
         This node is the parent of all tests.
     """
@@ -704,6 +721,6 @@ class RootNode(TestTree):
             l = list(dirset)
             l.sort()
             for i in l:
-                self.addChild(DirNode(i, self.cover))
+                self.addChild(_DirNode(i, self.cover))
         else:
-            self.addChild(DirNode(path, self.cover))
+            self.addChild(_DirNode(path, self.cover))

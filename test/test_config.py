@@ -1,7 +1,7 @@
 import libpry
 import libpry.config as config
 
-class uConfig(libpry.TestTree):
+class uConfig(libpry.AutoTree):
     def test_badkey(self):
         libpry.raises(
             "unknown options",

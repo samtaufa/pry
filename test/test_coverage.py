@@ -4,7 +4,7 @@ import libpry
 import libpry.coverage
 
 
-class uFile(libpry.TestTree):
+class uFile(libpry.AutoTree):
     def test_getLines(self):
         f = libpry.coverage.File(None)
         fname = "covfiles/linenos.py"
@@ -78,7 +78,7 @@ class uFile(libpry.TestTree):
         assert out == ' 11111\n 22222\n 33333'
 
 
-class uCoverage(libpry.TestTree):
+class uCoverage(libpry.AutoTree):
     def setUp(self):
         self.c = libpry.coverage.Coverage("testmodule")
 

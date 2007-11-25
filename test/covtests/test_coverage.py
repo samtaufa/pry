@@ -4,7 +4,7 @@ import libpry
 import libpry.coverage
 import testUnit
 
-class uCoverage(libpry.TestTree):
+class uCoverage(libpry.AutoTree):
     def setUp(self):
         self.cov = libpry.coverage.Coverage("./testUnit")
 

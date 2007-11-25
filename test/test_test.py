@@ -2,17 +2,17 @@ import fnmatch, cStringIO, os
 import libpry.test
 import libpry.helpers
 
-zero = libpry.test._Output(libpry.test.RootNode(False, None), 0)
+zero = libpry.test._Output(libpry.test._RootNode(False, None), 0)
 
-class TSetupCheckRoot(libpry.test.TestTree):
+class TSetupCheckRoot(libpry.test.AutoTree):
     def __init__(self, *args, **kwargs):
-        libpry.test.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.AutoTree.__init__(self, *args, **kwargs)
         self.log = []
 
 
-class TSetupCheck(libpry.test.TestTree):
+class TSetupCheck(libpry.test.AutoTree):
     def __init__(self, *args, **kwargs):
-        libpry.test.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.AutoTree.__init__(self, *args, **kwargs)
 
     def setUp(self):
         self.getTopNode().log.append("setup_%s"%self.name)
@@ -32,7 +32,7 @@ class TSetupCheckNodes(TSetupCheck):
         self.getTopNode().log.append("test_b")
 
 
-class _SetupAllCheck(libpry.test.TestTree):
+class _SetupAllCheck(libpry.test.AutoTree):
     def setUp(self):
         self.getTopNode().log.append("setUp")
 
@@ -66,15 +66,15 @@ class TTeardownAllCheck(_SetupAllCheck):
         self.getTopNode().log.append("tearDownAll")
 
 
-class TSubTree(libpry.test.TestTree):
+class TSubTree(libpry.test.AutoTree):
     name = "sub"
     def test_fail(self): assert False
     def test_error (self): raise ValueError
 
 
-class TTree(libpry.test.TestTree):
+class TTree(libpry.test.AutoTree):
     def __init__(self, *args, **kwargs):
-        libpry.test.TestTree.__init__(self, *args, **kwargs)
+        libpry.test.AutoTree.__init__(self, *args, **kwargs)
         self.addChild(TSubTree())
         self["item"] = "data"
 
@@ -90,18 +90,18 @@ class TTree(libpry.test.TestTree):
 def errFunc(): assert None
 
 
-class TSetupFailure(libpry.test.TestTree):
+class TSetupFailure(libpry.test.AutoTree):
     def setUp(self): raise ValueError
     def test_pass(self): pass
     def test_pass2(self): pass
 
 
-class TTeardownFailure(libpry.test.TestTree):
+class TTeardownFailure(libpry.test.AutoTree):
     def tearDown(self): raise ValueError
     def test_pass(self): pass
 
 
-class uError(libpry.test.TestTree):
+class uError(libpry.test.AutoTree):
     def test_exc(self):
         try:
             raise ValueError
@@ -110,7 +110,7 @@ class uError(libpry.test.TestTree):
         Error(None, None)
 
 
-class uSetupCheck(libpry.test.TestTree):
+class uSetupCheck(libpry.test.AutoTree):
     def setUp(self):
         self.t =  TSetupCheckRoot(
             [
@@ -159,7 +159,7 @@ class uSetupCheck(libpry.test.TestTree):
         assert self.t.log == v
 
 
-class uTestTree(libpry.test.TestTree):
+class uAutoTree(libpry.test.AutoTree):
     def setUp(self):
         self.t = TTree()
 
@@ -266,30 +266,30 @@ class uTestTree(libpry.test.TestTree):
         assert len(t.allNotRun()) == 0
 
     def test_getPath(self):
-        t = libpry.test.TestTree(name="one")
+        t = libpry.test.AutoTree(name="one")
         assert t.fullPath() == "one"
-        t2 = libpry.test.TestTree(name="two")
+        t2 = libpry.test.AutoTree(name="two")
         t.addChild(t2)
         assert t2.fullPath() == "one.two"
 
-        t3 = libpry.test.TestTree()
+        t3 = libpry.test.AutoTree()
         t.addChild(t3)
-        t4 = libpry.test.TestTree(name="four")
+        t4 = libpry.test.AutoTree(name="four")
         t3.addChild(t4)
-        assert t4.fullPath() == "one.TestTree.four"
+        assert t4.fullPath() == "one.AutoTree.four"
 
     def test_search(self):
-        t = libpry.test.TestTree(
+        t = libpry.test.AutoTree(
             [
-                libpry.test.TestTree(name="one"), [
-                    libpry.test.TestTree(name="a"),
-                    libpry.test.TestTree(name="b"),
-                    libpry.test.TestTree(name="one"),
+                libpry.test.AutoTree(name="one"), [
+                    libpry.test.AutoTree(name="a"),
+                    libpry.test.AutoTree(name="b"),
+                    libpry.test.AutoTree(name="one"),
                 ],
-                libpry.test.TestTree(name="two"), [
-                    libpry.test.TestTree(name="b"),
+                libpry.test.AutoTree(name="two"), [
+                    libpry.test.AutoTree(name="b"),
                 ],
-                libpry.test.TestTree(name="three"),
+                libpry.test.AutoTree(name="three"),
             ]
         )
         r = t.search("one")
@@ -367,10 +367,10 @@ class uTestTree(libpry.test.TestTree):
         assert t.log == expected
 
 
-class uDirNode(libpry.test.TestTree):
+class u_DirNode(libpry.test.AutoTree):
     def setUp(self):
         self.cwd = os.getcwd()
-        self.d = libpry.test.DirNode("testmodule", False)
+        self.d = libpry.test._DirNode("testmodule", False)
 
     def tearDown(self):
         os.chdir(self.cwd)
@@ -379,7 +379,7 @@ class uDirNode(libpry.test.TestTree):
         assert len(self.d.search("test_one")) == 2
 
     def test_init(self):
-        d = libpry.test.DirNode("testmodule/test_a.py", False)
+        d = libpry.test._DirNode("testmodule/test_a.py", False)
         assert len(d.search("test_one")) == 1
 
     def test_run(self):
@@ -389,16 +389,16 @@ class uDirNode(libpry.test.TestTree):
         repr(self.d)
 
 
-class uRootNode(libpry.test.TestTree):
+class u_RootNode(libpry.test.AutoTree):
     def test_init(self):
-        r = libpry.test.RootNode(False, None)
+        r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         assert r.search("test_one")
         assert r.search("testmodule/test_a.uOne.test_one")
         assert r.search("testmodule/two/test_two")
         assert not r.search("nonexistent")
 
-        r = libpry.test.RootNode(False, None)
+        r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", False)
         assert not r.search("testmodule/two/test_two")
         assert r.search("test_one")
@@ -408,33 +408,33 @@ class uRootNode(libpry.test.TestTree):
             raise ValueError
         except:
             pass
-        r = libpry.test.RootNode(False, None)
+        r = libpry.test._RootNode(False, None)
         o = libpry.test._OutputOne(r)
         r.goState = libpry.test.Error(r, "")
         o.final(r)
 
 
-class FullTree(libpry.test.TestTree):
+class FullTree(libpry.test.AutoTree):
     def setUp(self):
-        r = libpry.test.RootNode(False, None)
+        r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         self["root"] = r
         self["node"] = r.search("test_one")[0]
 
-        c = libpry.test.RootNode(libpry.test.DUMMY, None)
+        c = libpry.test._RootNode(libpry.test.DUMMY, None)
         c.addPath("testmodule", True)
         c.run(zero, 1)
         self["coverageRoot"] = c
 
-        c = libpry.test.RootNode(False, "calls")
+        c = libpry.test._RootNode(False, "calls")
         c.addPath("testmodule", True)
         c.run(zero, 1)
         self["profileRoot"] = c
 
 
-class uOutput(libpry.test.TestTree):
+class uOutput(libpry.test.AutoTree):
     def __init__(self, outputClass):
-        libpry.test.TestTree.__init__(self, name=outputClass.__name__)
+        libpry.test.AutoTree.__init__(self, name=outputClass.__name__)
         self.outputClass = outputClass
 
     def setUp(self):
@@ -456,7 +456,7 @@ class uOutput(libpry.test.TestTree):
         self.output.final(self["profileRoot"])
 
     
-class uTestNode(libpry.test.TestTree):
+class uTestNode(libpry.test.AutoTree):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
@@ -473,9 +473,9 @@ class uTestNode(libpry.test.TestTree):
         libpry.helpers.raises(NotImplementedError, t)
 
 
-class u_Output(libpry.test.TestTree):
+class u_Output(libpry.test.AutoTree):
     def test_construct(self):
-        r = libpry.test.RootNode(False, None)
+        r = libpry.test._RootNode(False, None)
         o = libpry.test._Output(r, 0)
         assert isinstance(o.o, libpry.test._OutputZero)
 
@@ -493,16 +493,16 @@ class u_Output(libpry.test.TestTree):
 
 
 
-class uFileNode(libpry.test.TestTree):
+class uFileNode(libpry.test.AutoTree):
     def test_repr(self):
         n = self["root"].search("testmodule/test_a")[0]
         repr(n)
 
 
-class uTestWrapper(libpry.test.TestTree):
+class uCallableNode(libpry.test.AutoTree):
     def test_repr(self):
         def x(): pass
-        t = libpry.test.TestWrapper("foo", x)
+        t = libpry.test.CallableNode("foo", x)
         repr(t)
 
 
@@ -516,9 +516,9 @@ tests = [
         uFileNode(),
     ],
     uTestNode(),
-    uRootNode(),
-    uDirNode(),
-    uTestTree(),
+    u_RootNode(),
+    u_DirNode(),
+    uAutoTree(),
     u_Output(),
-    uTestWrapper(),
+    uCallableNode(),
 ]

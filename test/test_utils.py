@@ -1,7 +1,7 @@
 import libpry
 
 
-class uisPathContained(libpry.TestTree):
+class uisPathContained(libpry.AutoTree):
     def test_isPathContained(self):
         assert libpry.utils.isPathContained(".", "./foo.py")
         assert libpry.utils.isPathContained("..", ".")
@@ -15,7 +15,7 @@ class uisPathContained(libpry.TestTree):
         assert not libpry.utils.isPathContainedAny([".", "flibble"], "..")
 
 
-class usummariseList(libpry.TestTree):
+class usummariseList(libpry.AutoTree):
     def test_summariseList(self):
         lst = [1, 2, 3, 4, 5]
         expected = [(1, 5)]
@@ -34,7 +34,7 @@ class usummariseList(libpry.TestTree):
         assert libpry.utils.summariseList(lst) == expected
 
 
-class uisStringLike(libpry.TestTree):
+class uisStringLike(libpry.AutoTree):
     def test_all(self):
         assert libpry.utils.isStringLike("foo")
         assert not libpry.utils.isStringLike([1, 2, 3])
@@ -42,13 +42,13 @@ class uisStringLike(libpry.TestTree):
         assert not libpry.utils.isStringLike(["1", "2", "3"])
 
 
-class uisNumeric(libpry.TestTree):
+class uisNumeric(libpry.AutoTree):
     def test_all(self):
         assert not libpry.utils.isNumeric("foo")
         assert libpry.utils.isNumeric(1)
 
 
-class u_splitSpec(libpry.TestTree):
+class u_splitSpec(libpry.AutoTree):
     def test_simple(self):
         assert libpry.utils._splitSpec("foo") == ('', "foo")
         assert libpry.utils._splitSpec("foo.bar") == ('', "foo.bar")
@@ -84,7 +84,7 @@ class u_splitSpec(libpry.TestTree):
                 )
 
 
-class u_terminalWidth(libpry.TestTree):
+class u_terminalWidth(libpry.AutoTree):
     def test_all(self):
         assert libpry.utils.terminalWidth()
 

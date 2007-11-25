@@ -1,6 +1,6 @@
 import libpry
 
-class uOne(libpry.TestTree):
+class uOne(libpry.AutoTree):
     def test_one(self):
         pass
 
