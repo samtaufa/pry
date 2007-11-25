@@ -24,11 +24,14 @@ class File:
         """
             Return a "nice" path, relative to the specified base.
         """
-        common = len(os.path.commonprefix([base, self.path]))
-        fname = self.path[common:]
-        if fname[0] == "/":
-            fname = fname[1:]
-        return fname
+        if base == self.path:
+            return os.path.basename(base)
+        else:
+            common = len(os.path.commonprefix([base, self.path]))
+            fname = self.path[common:]
+            if fname[0] == "/":
+                fname = fname[1:]
+            return fname
 
     def prettyRanges(self, ranges, leftMargin, width):
         """

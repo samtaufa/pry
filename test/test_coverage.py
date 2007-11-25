@@ -42,6 +42,7 @@ class uFile(libpry.AutoTree):
         f = libpry.coverage.File(None)
         f.path = "/foo/bar.py"
         assert f.nicePath("/foo") == "bar.py"
+        assert f.nicePath(f.path) == "bar.py"
 
     def test_cmp(self):
         f1 = libpry.coverage.File("testmodule/test_a.py")
