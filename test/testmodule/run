@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# We do something a bit special here. Since this suite contains intentional
+# errors, we don't want it to be run when we run a recursive suite by default.
+
+cp .pry.inactive .pry
+../../pry $*
+rm .pry
