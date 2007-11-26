@@ -4,5 +4,7 @@
 # errors, we don't want it to be run when we run a recursive suite by default.
 
 cp .pry.inactive .pry
+cp dir.one/.pry.inactive dir.one/.pry
 ../../pry $*
+rm dir.one/.pry
 rm .pry

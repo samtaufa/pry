@@ -1,4 +1,4 @@
-import fnmatch, cStringIO, os
+import fnmatch, cStringIO, os, shutil
 import libpry.test
 import libpry.helpers
 
@@ -416,6 +416,7 @@ class u_RootNode(libpry.test.AutoTree):
 
 class FullTree(libpry.test.AutoTree):
     def setUp(self):
+        shutil.copy("testmodule/.pry.inactive", "testmodule/.pry")
         r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         self["root"] = r
@@ -430,6 +431,9 @@ class FullTree(libpry.test.AutoTree):
         c.addPath("testmodule", True)
         c.run(zero, 1)
         self["profileRoot"] = c
+
+    def tearDown(self):
+        os.unlink("testmodule/.pry")
 
 
 class uOutput(libpry.test.AutoTree):
@@ -514,9 +518,9 @@ tests = [
         uOutput(libpry.test._OutputTwo),
         uOutput(libpry.test._OutputThree),
         uFileNode(),
+        u_RootNode(),
     ],
     uTestNode(),
-    u_RootNode(),
     u_DirNode(),
     uAutoTree(),
     u_Output(),
