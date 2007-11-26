@@ -5,6 +5,8 @@
 
 cp .pry.inactive .pry
 cp dir.one/.pry.inactive dir.one/.pry
+cp two/.pry.inactive two/.pry
 ../../pry $*
 rm dir.one/.pry
 rm .pry
+rm two/.pry

@@ -417,6 +417,7 @@ class u_RootNode(libpry.test.AutoTree):
 class FullTree(libpry.test.AutoTree):
     def setUp(self):
         shutil.copy("testmodule/.pry.inactive", "testmodule/.pry")
+        shutil.copy("testmodule/two/.pry.inactive", "testmodule/two/.pry")
         r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         self["root"] = r
@@ -434,6 +435,7 @@ class FullTree(libpry.test.AutoTree):
 
     def tearDown(self):
         os.unlink("testmodule/.pry")
+        os.unlink("testmodule/two/.pry")
 
 
 class uOutput(libpry.test.AutoTree):
