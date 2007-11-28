@@ -1,4 +1,5 @@
 coverage = ../libpry
 exclude =   .
+           ../libpry/_tinytree.py 
 _magic = True
 

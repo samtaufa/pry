@@ -5,7 +5,7 @@
     tearDown method - these get run before and after each child node is run.
 """
 import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
-import tinytree
+import _tinytree
 import coverage
 
 _TestGlob = "test_*.py"
@@ -231,7 +231,7 @@ class _Output:
         return printClosure
 
 
-class _TestBase(tinytree.Tree):
+class _TestBase(_tinytree.Tree):
     """
         Automatically turns methods or arbitrary callables of the form test_*
         into TestNodes.
@@ -240,7 +240,7 @@ class _TestBase(tinytree.Tree):
     name = None
     _selected = True
     def __init__(self, children=None, name=None):
-        tinytree.Tree.__init__(self, children)
+        _tinytree.Tree.__init__(self, children)
         if name:
             self.name = name
         self._ns = {}
