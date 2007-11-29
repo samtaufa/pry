@@ -84,6 +84,13 @@ class File:
         """
             Return a list of executable line numbers in a code object.
         """
+        # This function deserves a little explanation. It turns out that under
+        # some cases, a code block can have a non-sensical co_firstlineno.
+        # Luckily, we can test for this by making sure that we only add a
+        # co_firstlineno to our runnable lines set if it is strictly larger
+        # than the firstlineno of the block it is nested in.
+        #
+        # No doubt this is a Python bug that needs to be fixed. 
         linenos = set()
         line_increments = [ord(c) for c in code.co_lnotab[1::2]]
         lineno = code.co_firstlineno

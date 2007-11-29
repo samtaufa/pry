@@ -25,12 +25,12 @@ class uCoverage(libpry.AutoTree):
         f = self.cov.fileDict[os.path.abspath(pth)]
         assert not f.notExecuted
 
-    def test_longinit(self):
+    def test_longfuncsig(self):
         self.cov.start()
-        import testUnit.longinit
-        testUnit.longinit.foo(1)
+        import testUnit.longfuncsig
+        testUnit.longfuncsig.foo(1)
         self.cov.stop()
-        pth = os.path.abspath("./testUnit/longinit.py")
+        pth = os.path.abspath("./testUnit/longfuncsig.py")
         f = self.cov.fileDict[os.path.abspath(pth)]
         assert f.executed == f.executable
 
