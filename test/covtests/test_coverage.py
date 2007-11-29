@@ -29,6 +29,8 @@ class uCoverage(libpry.AutoTree):
         self.cov.start()
         import testUnit.longfuncsig
         testUnit.longfuncsig.foo(1)
+        f = testUnit.longfuncsig.Foo()
+        f.foo(1)
         self.cov.stop()
         pth = os.path.abspath("./testUnit/longfuncsig.py")
         f = self.cov.fileDict[os.path.abspath(pth)]

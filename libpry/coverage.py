@@ -88,7 +88,7 @@ class File:
         # some cases, a code block can have a non-sensical co_firstlineno.
         # Luckily, we can test for this by making sure that we only add a
         # co_firstlineno to our runnable lines set if it is strictly larger
-        # than the firstlineno of the block it is nested in.
+        # than any reported line number of the block it is nested in.
         #
         # No doubt this is a Python bug that needs to be fixed. 
         linenos = set()
@@ -99,7 +99,9 @@ class File:
             linenos.add(lineno)
         for c in code.co_consts:
             if isinstance(c, types.CodeType):
-                linenos.update(self.getLines(c, code.co_firstlineno))
+                l = list(linenos)
+                l.append(code.co_firstlineno)
+                linenos.update(self.getLines(c, max(l)))
         if linenos:
             if code.co_firstlineno > minimum:
                 linenos.add(code.co_firstlineno)
