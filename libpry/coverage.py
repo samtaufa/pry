@@ -80,7 +80,7 @@ class File:
         else:
             return 100.0
 
-    def getLines(self, code):
+    def getLines(self, code, minimum=0):
         """
             Return a list of executable line numbers in a code object.
         """
@@ -92,9 +92,10 @@ class File:
             linenos.add(lineno)
         for c in code.co_consts:
             if isinstance(c, types.CodeType):
-                linenos.update(self.getLines(c))
+                linenos.update(self.getLines(c, code.co_firstlineno))
         if linenos:
-            linenos.add(code.co_firstlineno)
+            if code.co_firstlineno > minimum:
+                linenos.add(code.co_firstlineno)
         return linenos
 
     def getExclusions(self, data, filename):

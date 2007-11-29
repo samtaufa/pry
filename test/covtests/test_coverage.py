@@ -25,6 +25,15 @@ class uCoverage(libpry.AutoTree):
         f = self.cov.fileDict[os.path.abspath(pth)]
         assert not f.notExecuted
 
+    def test_longinit(self):
+        self.cov.start()
+        import testUnit.longinit
+        testUnit.longinit.foo(1)
+        self.cov.stop()
+        pth = os.path.abspath("./testUnit/longinit.py")
+        f = self.cov.fileDict[os.path.abspath(pth)]
+        assert f.executed == f.executable
+
     def test_coveragePath(self):
         """
             Make sure that only files in our coveragePath are covered.
