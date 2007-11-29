@@ -144,6 +144,7 @@ class File:
 
 
 class Coverage:
+    _pathcache = {}
     def __init__(self, coveragePath, excludeList=[], dummy=False):
         """
             coveragePath    - Path to the file tree that will be analysed.
@@ -172,6 +173,14 @@ class Coverage:
         return d
 
     # begin nocover
+    def _cachedAbsPath(self, path):
+        a = self._pathcache.get(path)
+        if a:
+            return a
+        else:
+            self._pathcache[path] = os.path.abspath(path)
+            return self._pathcache[path]
+
     def _globalTrace(self, frame, event, arg):
         """
             This method will produce incorrect coverage results in Python
@@ -179,7 +188,9 @@ class Coverage:
 
                 http://svn.python.org/view?rev=58963&view=rev
         """
-        f = self.fileDict.get(os.path.abspath(frame.f_code.co_filename))
+        f = self.fileDict.get(
+                self._cachedAbsPath(frame.f_code.co_filename)
+            )
         if f:
             def local(frame, event, arg):
                 if event == "line":
