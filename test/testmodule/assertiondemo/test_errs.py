@@ -16,6 +16,11 @@ class uAssertions(libpry.AutoTree):
         assert not x != 1, "This is an intentional error."
 
 
+    def test_four(self):
+        x = "wabble"
+        assert not (x != 1), "This is an intentional error."
+
+
 tests = [
     uAssertions()
 ]
