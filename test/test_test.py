@@ -382,6 +382,10 @@ class u_DirNode(libpry.test.AutoTree):
         d = libpry.test._DirNode("testmodule/test_a.py", False)
         assert len(d.search("test_one")) == 1
 
+    def test_nocover(self):
+        d = libpry.test._DirNode("testmodule/nocover", True)
+        assert d.coverage == False
+
     def test_run(self):
         self.d.run(zero, 1, None)
 

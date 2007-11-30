@@ -646,7 +646,7 @@ class _DirNode(TestTree):
         self.magic = c._magic
 
         if self.coveragePath == "None":
-            self.cover = False
+            cover = False
 
         self.coverage = False
         self._pre()
