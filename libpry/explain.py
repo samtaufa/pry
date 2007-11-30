@@ -3,7 +3,6 @@
 """
 import tokenize, parser
 
-
 class _Wrap:
     def __init__(self, *lines):
         self.lines = list(lines)
@@ -20,7 +19,10 @@ class Expression:
         self.s = s.strip()
 
     def show(self, glob, loc):
-        return str(eval(self.s, glob, loc))
+        try:
+            return repr(eval(self.s, glob, loc))
+        except SyntaxError:
+            return "<could not be evaluated>"
 
     def __eq__(self, other):
         return self.s == other.s
@@ -32,7 +34,7 @@ class Explain:
     def __init__(self, expr=None, glob=None, loc=None):
         self.expr, self.glob, self.loc = expr, glob, loc
         if self.expr:
-            self.expr = self.expr.strip()
+            self.parsed, self.expr = self.parseExpression(self.expr)
 
     def parseExpression(self, expr):
         """
@@ -44,10 +46,6 @@ class Explain:
 
             Returns None if the expression could not be interpreted.
         """
-        parts = expr.split()
-        if parts:
-            if parts[0] == "assert":
-                expr = expr[7:].strip()
         nest = 0
         rem = expr
         # A list of (str, start, end) tuples.
@@ -69,7 +67,7 @@ class Explain:
                         rem = expr[:start]
                         break
         except tokenize.TokenError:
-            return None
+            return None, None
         if delimiters:
             ret = []
             cur = 0
@@ -79,18 +77,18 @@ class Explain:
                 ret.append(s)
                 cur = end
             ret.append(Expression(rem[end:]))
-            return ret
+            return ret, rem
         else:
-            return [Expression(rem)]
+            return [Expression(rem)], rem
     
     def __str__(self):
         l = []
-        for i in self.parseExpression(self.expr):
+        l.append("    :: Re-evaluating expression:\n")
+        l.append("   :: %s\n"%self.expr)
+        l.append("   ::")
+        for i in self.parsed:
             if isinstance(i, Expression):
                 l.append(i.show(self.glob, self.loc))
             else:
                 l.append(i)
         return " ".join(l)
-
-
-        

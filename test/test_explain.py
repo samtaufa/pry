@@ -13,7 +13,7 @@ class uExplain(libpry.AutoTree):
         self.s = explain.Explain()
 
     def test_simple(self):
-        r = self.s.parseExpression("1 == 1")
+        r, s = self.s.parseExpression("1 == 1")
         assert r == [
                         explain.Expression("1"),
                         "==",
@@ -21,13 +21,13 @@ class uExplain(libpry.AutoTree):
                     ]
 
     def test_parens(self):
-        r = self.s.parseExpression("True == (1 == 1)")
+        r, s = self.s.parseExpression("True == (1 == 1)")
         assert r == [
                         explain.Expression('True'),
                         '==',
                         explain.Expression('(1 == 1)')
                     ]
-        r = self.s.parseExpression("True == ((1) == (1))")
+        r, s = self.s.parseExpression("True == ((1) == (1))")
         assert r == [
                         explain.Expression('True'),
                         '==',
@@ -35,25 +35,24 @@ class uExplain(libpry.AutoTree):
                     ]
 
     def test_unary(self):
-        r = self.s.parseExpression("(1 == 1)")
+        r, s = self.s.parseExpression("(1 == 1)")
         assert r == [
                         explain.Expression('(1 == 1)')
                     ]
-        r = self.s.parseExpression("1+1")
+        r, s = self.s.parseExpression("1+1")
         assert r == [
                         explain.Expression('1+1')
                     ]
 
     def test_not(self):
-        r = self.s.parseExpression("not (1 == 1)")
+        r, s = self.s.parseExpression("not (1 == 1)")
         assert r == [
                         "not",
                         explain.Expression('(1 == 1)')
                     ]
 
     def test_and(self):
-        r = self.s.parseExpression("a == b and c == d")
-        r2 = self.s.parseExpression("assert a == b and c == d")
+        r, s = self.s.parseExpression("a == b and c == d")
         expected = [
                         explain.Expression('a'),
                         '==',
@@ -64,11 +63,9 @@ class uExplain(libpry.AutoTree):
                         explain.Expression('d')
                     ]
         assert r == expected
-        assert r2 == expected
 
     def test_comma(self):
-        r = self.s.parseExpression("a == b and c == d, foo")
-        r2 = self.s.parseExpression("assert\ta == b and c == d, foo")
+        r, s = self.s.parseExpression("a == b and c == d, foo")
         expected = [
                         explain.Expression('a'),
                         '==',
@@ -79,12 +76,11 @@ class uExplain(libpry.AutoTree):
                         explain.Expression('d')
                     ]
         assert r == expected
-        assert r2 == expected
 
     def test_unbalanced(self):
-        assert not self.s.parseExpression("a == (b and c == d, foo")
-        assert not self.s.parseExpression("[a == b and c == d, foo")
-        assert not self.s.parseExpression("a == b and c == d, foo]")
+        assert not self.s.parseExpression("a == (b and c == d, foo")[0]
+        assert not self.s.parseExpression("[a == b and c == d, foo")[0]
+        assert not self.s.parseExpression("a == b and c == d, foo]")[0]
 
     def test_str(self):
         r = explain.Explain(
@@ -92,7 +88,7 @@ class uExplain(libpry.AutoTree):
                 dict(a = 1, b = 2, c = 3, d = 4),
                 dict()
             )
-        assert str(r) == "1 == 2 and 3 == 4"
+        assert "1 == 2 and 3 == 4" in str(r)
 
 
 tests = [

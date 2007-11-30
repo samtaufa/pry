@@ -3,10 +3,14 @@
 # We do something a bit special here. Since this suite contains intentional
 # errors, we don't want it to be run when we run a recursive suite by default.
 
-cp .pry.inactive .pry
-cp dir.one/.pry.inactive dir.one/.pry
-cp two/.pry.inactive two/.pry
+DIRS=". dir.one two nocover assertiondemo"
+
+for i in $DIRS; do
+    cp $i/.pry.inactive $i/.pry
+done
+
 ../../pry $*
-rm dir.one/.pry
-rm .pry
-rm two/.pry
+
+for i in $DIRS; do
+    rm $i/.pry
+done

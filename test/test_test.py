@@ -419,10 +419,13 @@ class u_RootNode(libpry.test.AutoTree):
 
 
 class FullTree(libpry.test.AutoTree):
+    dirs = [".", "two", "dir.one", "nocover", "assertiondemo"]
     def setUp(self):
-        shutil.copy("testmodule/.pry.inactive", "testmodule/.pry")
-        shutil.copy("testmodule/two/.pry.inactive", "testmodule/two/.pry")
-        shutil.copy("testmodule/dir.one/.pry.inactive", "testmodule/dir.one/.pry")
+        for i in self.dirs:
+            shutil.copy(
+                os.path.join("testmodule", i, ".pry.inactive"),
+                os.path.join("testmodule", i, ".pry"),
+            )
         r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         self["root"] = r
@@ -439,9 +442,8 @@ class FullTree(libpry.test.AutoTree):
         self["profileRoot"] = c
 
     def tearDown(self):
-        os.unlink("testmodule/.pry")
-        os.unlink("testmodule/two/.pry")
-        os.unlink("testmodule/dir.one/.pry")
+        for i in self.dirs:
+            os.unlink(os.path.join("testmodule", i, ".pry"))
 
 
 class uOutput(libpry.test.AutoTree):
@@ -527,9 +529,9 @@ tests = [
         uOutput(libpry.test._OutputThree),
         uFileNode(),
         u_RootNode(),
+        u_DirNode(),
     ],
     uTestNode(),
-    u_DirNode(),
     uAutoTree(),
     u_Output(),
     uCallableNode(),

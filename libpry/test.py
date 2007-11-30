@@ -5,8 +5,8 @@
     tearDown method - these get run before and after each child node is run.
 """
 import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
-import _tinytree
-import coverage
+import linecache
+import _tinytree, explain, coverage
 
 _TestGlob = "test_*.py"
 
@@ -19,6 +19,11 @@ class Error:
         self.node, self.msg = node, msg
         self.exctype, self.excvalue, self.tb = sys.exc_info()
         # Expunge libpry from the traceback
+        self.explanation = None 
+        if self.exctype == AssertionError:
+            r = self.extractLine(self.tb)
+            self.explanation = str(explain.Explain(*r))
+            self.errLine = r[0]
         while "libpry" in self.tb.tb_frame.f_code.co_filename:
             next = self.tb.tb_next
             if next:
@@ -32,6 +37,26 @@ class Error:
                 self.exctype, self.excvalue, self.tb
             )
 
+    def extractLine(self, tb):
+        r = None
+        while tb is not None:
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            co = f.f_code
+            filename = co.co_filename
+            name = co.co_name
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            line = line.strip()
+            parts = line.split()
+            if parts:
+                if parts[0] == "assert":
+                    line = line[7:]
+            line = line.strip()
+            r = (line, f.f_globals, f.f_locals)
+            tb = tb.tb_next
+        return r
+
     def __str__(self):
         strs = [
                  "%s"%self.node.fullPath(),
@@ -40,7 +65,10 @@ class Error:
             strs.append("    %s:"%self.msg)
         for i in self.s:
             strs.append("    %s"%i.rstrip())
-        strs.append("\n")
+        strs.append("")
+        if self.explanation:
+            strs.append(self.explanation)
+            strs.append("\n")
         return "\n".join(strs)
 
 
@@ -103,6 +131,7 @@ class _OutputOne(_OutputZero):
             lst.append("\nERRORS\n======\n")
             for i in errs:
                 lst.append(str(i.getError()))
+                lst.append("\n")
 
         if root.goState and not root.isError():
             infostr = [
