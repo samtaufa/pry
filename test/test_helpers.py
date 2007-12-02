@@ -1,9 +1,6 @@
 import libpry
 import libpry.helpers as he
 
-# Magic to make coverage analysis on pry itself work
-reload(he)
-
 def err(*args, **kwargs):
     raise ValueError(str(args) + str(kwargs))
 
