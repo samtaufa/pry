@@ -490,8 +490,7 @@ NOTRUN = object()
 
 class TestTree(_TestBase):
     """
-        Automatically turns methods or arbitrary callables of the form test_*
-        into TestNodes.
+        A container for tests.
     """
     _base = None
     _exclude = None
@@ -690,7 +689,7 @@ class _DirNode(TestTree):
         l.sort()
         for i in l:
             if fnmatch.fnmatch(i, glob):
-                self.addChild(FileNode(path, i, self.magic))
+                self.addChild(FileNode(self.dirPath, i, self.magic))
         self._post()
 
     def _pre(self):
