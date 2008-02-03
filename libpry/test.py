@@ -22,8 +22,9 @@ class Error:
         self.explanation = None 
         if self.exctype == AssertionError:
             r = self.extractLine(self.tb)
-            self.explanation = str(explain.Explain(*r))
-            self.errLine = r[0]
+            if r[0]:
+                self.explanation = str(explain.Explain(*r))
+                self.errLine = r[0]
         while "libpry" in self.tb.tb_frame.f_code.co_filename:
             next = self.tb.tb_next
             if next:
