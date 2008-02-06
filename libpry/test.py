@@ -13,7 +13,6 @@ _TestGlob = "test_*.py"
 
 class TmpDirMixin:
     def setUp(self):
-        print "Nookie"
         self["tmpdir"] = tempfile.mkdtemp()
 
     def tearDown(self):
