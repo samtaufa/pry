@@ -5,10 +5,20 @@
     tearDown method - these get run before and after each child node is run.
 """
 import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
-import linecache
+import linecache, shutil, tempfile
 import _tinytree, explain, coverage
 
 _TestGlob = "test_*.py"
+
+
+class TmpDirMixin:
+    def setUp(self):
+        print "Nookie"
+        self["tmpdir"] = tempfile.mkdtemp()
+
+    def tearDown(self):
+        if os.path.isdir(self["tmpdir"]):
+            shutil.rmtree(self["tmpdir"])
 
 
 class Error:
@@ -24,7 +34,6 @@ class Error:
             r = self.extractLine(self.tb)
             if r[0]:
                 self.explanation = str(explain.Explain(*r))
-                self.errLine = r[0]
         while "libpry" in self.tb.tb_frame.f_code.co_filename:
             next = self.tb.tb_next
             if next:

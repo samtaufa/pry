@@ -4,6 +4,16 @@ import libpry.helpers
 
 zero = libpry.test._Output(libpry.test._RootNode(False, None), 0)
 
+
+class uTmpDirMixin(libpry.test.TmpDirMixin, libpry.test.AutoTree):
+    def tearDown(self):
+        libpry.test.TmpDirMixin.tearDown(self)
+        assert not os.path.isdir(self["tmpdir"])
+
+    def test_check(self):
+        assert os.path.isdir(self["tmpdir"])
+
+
 class TSetupCheckRoot(libpry.test.AutoTree):
     def __init__(self, *args, **kwargs):
         libpry.test.AutoTree.__init__(self, *args, **kwargs)
@@ -535,4 +545,5 @@ tests = [
     uAutoTree(),
     u_Output(),
     uCallableNode(),
+    uTmpDirMixin(),
 ]
