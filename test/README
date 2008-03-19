@@ -1,0 +1,10 @@
+
+Pry's unit test suite is, of course, written using Pry. When running coverage,
+however, be careful to run the test suite with the pry executable inside the
+repository, rather than the installed system version.
+
+This means doing something like the following in the pry repo:
+
+    cd test
+
+    ../pry -s
