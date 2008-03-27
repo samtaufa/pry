@@ -25,10 +25,10 @@ class TSetupCheck(libpry.test.AutoTree):
         libpry.test.AutoTree.__init__(self, *args, **kwargs)
 
     def setUp(self):
-        self.getTopNode().log.append("setup_%s"%self.name)
+        self.getRoot().log.append("setup_%s"%self.name)
 
     def tearDown(self):
-        self.getTopNode().log.append("teardown_%s"%self.name)
+        self.getRoot().log.append("teardown_%s"%self.name)
 
 
 class TSetupCheckNodes(TSetupCheck):
@@ -36,29 +36,29 @@ class TSetupCheckNodes(TSetupCheck):
         TSetupCheck.__init__(self, *args, **kwargs)
 
     def test_a(self):
-        self.getTopNode().log.append("test_a")
+        self.getRoot().log.append("test_a")
 
     def test_b(self):
-        self.getTopNode().log.append("test_b")
+        self.getRoot().log.append("test_b")
 
 
 class _SetupAllCheck(libpry.test.AutoTree):
     def setUp(self):
-        self.getTopNode().log.append("setUp")
+        self.getRoot().log.append("setUp")
 
     def tearDown(self):
-        self.getTopNode().log.append("tearDown")
+        self.getRoot().log.append("tearDown")
 
     def test_a(self):
-        self.getTopNode().log.append("test_a")
+        self.getRoot().log.append("test_a")
 
     def test_b(self):
-        self.getTopNode().log.append("test_b")
+        self.getRoot().log.append("test_b")
 
 
 class TSetupAllCheck(_SetupAllCheck):
     def setUpAll(self):
-        self.getTopNode().log.append("setUpAll")
+        self.getRoot().log.append("setUpAll")
 
 
 class TSetupAllError(_SetupAllCheck):
@@ -73,7 +73,7 @@ class TTearDownAllError(_SetupAllCheck):
 
 class TTeardownAllCheck(_SetupAllCheck):
     def tearDownAll(self):
-        self.getTopNode().log.append("tearDownAll")
+        self.getRoot().log.append("tearDownAll")
 
 
 class TSubTree(libpry.test.AutoTree):
