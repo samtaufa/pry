@@ -80,6 +80,29 @@ class File:
         else:
             return 100.0
 
+    def _extractLineOffsets(self, lnotab):
+        # For information on how co_lnotab is decoded, see the comment around line
+        # 470 in Objects/codeobject.c in the Python project.
+        lst = []
+        offsets = zip(
+                [ord(c) for c in lnotab[0::2]],
+                [ord(c) for c in lnotab[1::2]],
+            )
+        if offsets:
+            cum = 0
+            for byte, line in offsets:
+                if line == 255:
+                    cum += line
+                    continue
+                if byte == 0:
+                    lst.append(cum + line)
+                    cum = 0
+                else:
+                    lst.append(line)
+            if cum:
+                lst.append(cum)
+        return lst
+
     def getLines(self, code, minimum=0):
         """
             Return a list of executable line numbers in a code object.
@@ -92,7 +115,7 @@ class File:
         #
         # No doubt this is a Python bug that needs to be fixed. 
         linenos = set()
-        line_increments = [ord(c) for c in code.co_lnotab[1::2]]
+        line_increments = self._extractLineOffsets(code.co_lnotab)
         lineno = code.co_firstlineno
         for li in line_increments:
             lineno += li

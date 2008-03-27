@@ -36,6 +36,15 @@ class uCoverage(libpry.AutoTree):
         f = self.cov.fileDict[os.path.abspath(pth)]
         assert f.executed == f.executable
 
+    def test_longjump(self):
+        self.cov.start()
+        import testUnit.longjump
+        testUnit.longjump.foo()
+        self.cov.stop()
+        pth = os.path.abspath("./testUnit/longjump.py")
+        f = self.cov.fileDict[os.path.abspath(pth)]
+        assert not f.notExecuted
+
     def test_coveragePath(self):
         """
             Make sure that only files in our coveragePath are covered.
