@@ -8,7 +8,7 @@ def main():
     parser = OptionParser(version="%prog 0.1")
     parser.add_option("-a", "--annotate",
                       action="store_true", dest="annotate",
-                      help="Page annotations")
+                      help="Annotated coverage output.")
     parser.add_option("-c", "--clear",
                       action="store_true", dest="clear",
                       help="Clear all .pyc and .pyo files in the project base"
@@ -28,7 +28,7 @@ def main():
                       help="Run each test N times.")
     parser.add_option("-q", "--quiet",
                       action="store_true", dest="quiet",
-                      help="Quiet")
+                      help="Quiet.")
     parser.add_option("-v", "--verbose",
                       action="count", dest="verbose", default=1,
                       help="Verbose.")
@@ -36,7 +36,7 @@ def main():
                         "--debug-dump",
                         action="store_true", dest="debug",
                         help="For debugging only. Like list,"
-                           "but dump the full tree structure."
+                           " but dump the full tree structure."
                     )
 
     group = OptionGroup(
