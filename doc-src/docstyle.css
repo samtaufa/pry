@@ -14,6 +14,11 @@ body {
     font-size:15px;
 }
 
+.fname {
+    font-size:12px;
+    text-align: right;
+}
+
 #hd h1 {
     font-size:      2em;
     font-weight:    bold;

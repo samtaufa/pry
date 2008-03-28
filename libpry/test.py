@@ -10,7 +10,6 @@ import _tinytree, explain, coverage
 
 _TestGlob = "test_*.py"
 
-
 class TmpDirMixin:
     def setUp(self):
         self["tmpdir"] = tempfile.mkdtemp()

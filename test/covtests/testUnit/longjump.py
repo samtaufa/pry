@@ -290,5 +290,3 @@ def foo():
 
     """
     locals()
-
-

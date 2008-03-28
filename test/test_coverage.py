@@ -29,6 +29,15 @@ class uFile(libpry.AutoTree):
         expected = [265, 1]
         assert f._extractLineOffsets(offsets) == expected
 
+        offsets = [
+            #byte    line
+            chr(1), chr(1),
+            chr(0), chr(255),
+        ]
+        offets = "".join(offsets)
+        expected = [1, 255]
+        assert f._extractLineOffsets(offsets) == expected
+
     def test_getLines(self):
         f = libpry.coverage.File(None)
         fname = "covfiles/linenos.py"

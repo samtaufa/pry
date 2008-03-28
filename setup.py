@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
         name = "pry",
-        version = "0.1",
+        version = "0.2",
         description = "A unit testing framework and coverage engine.",
         author = "Aldo Cortesi",
         author_email = "aldo@nullcube.com",
