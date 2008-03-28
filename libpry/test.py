@@ -6,9 +6,35 @@
 """
 import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
 import linecache, shutil, tempfile
-import _tinytree, explain, coverage
+import _tinytree, explain, coverage, utils
 
 _TestGlob = "test_*.py"
+
+
+def raises(exc, callableObj, *args, **kwargs):
+    try:
+        apply(callableObj, args, kwargs)
+    except Exception, v:
+        if utils.isStringLike(exc):
+            if exc.lower() in str(v).lower():
+                return
+            else:
+                raise AssertionError(
+                    "Expected %s, but caught %s"%(
+                        repr(str(exc)), v
+                    )
+                )
+        else:
+            if isinstance(v, exc):
+                return
+            else:
+                raise AssertionError(
+                    "Expected %s, but caught %s %s"%(
+                        exc.__name__, v.__class__.__name__, str(v)
+                    )
+                )
+    raise AssertionError("No exception raised.")
+
 
 class TmpDirMixin:
     def setUp(self):

@@ -1,8 +1,33 @@
 import fnmatch, cStringIO, os, shutil
 import libpry.test
-import libpry.helpers
 
 zero = libpry.test._Output(libpry.test._RootNode(False, None), 0)
+
+def err(*args, **kwargs):
+    raise ValueError(str(args) + str(kwargs))
+
+def ok(): pass
+
+class uRaises(libpry.AutoTree):
+    def test_class(self):
+        libpry.test.raises(ValueError, err, "Hello")
+        libpry.test.raises(
+            "expected assertionerror",
+            libpry.test.raises, AssertionError, err, "Hello"
+        )
+
+    def test_string(self):
+        libpry.test.raises("test error", err, "Test Error")
+        libpry.test.raises(
+            "expected",
+            libpry.test.raises, "test error", err, "Hello"
+        )
+
+    def test_noexception(self):
+        libpry.test.raises(
+            "no exception",
+            libpry.test.raises, "some exception", ok
+        )
 
 
 class uTmpDirMixin(libpry.test.TmpDirMixin, libpry.test.AutoTree):
@@ -260,7 +285,7 @@ class uAutoTree(libpry.test.AutoTree):
     def test_getitem(self):
         n = self.t.search("test_pass")[0]
         assert n["item"] == "data"
-        libpry.helpers.raises(KeyError, n.__getitem__, "nonexistent")
+        libpry.test.raises(KeyError, n.__getitem__, "nonexistent")
 
     def test_setupFailure(self):
         t = TSetupFailure()
@@ -358,7 +383,7 @@ class uAutoTree(libpry.test.AutoTree):
                 ]
             )
         x = t.children[0]
-        libpry.helpers.raises("no error for this node", x.getError)
+        libpry.test.raises("no error for this node", x.getError)
         t.run(zero, 1, None)
         assert x.getError()
 
@@ -494,7 +519,7 @@ class uTestNode(libpry.test.AutoTree):
 
     def test_call(self):
         t = libpry.test.TestNode("name")
-        libpry.helpers.raises(NotImplementedError, t)
+        libpry.test.raises(NotImplementedError, t)
 
 
 class u_Output(libpry.test.AutoTree):
@@ -531,6 +556,7 @@ class uCallableNode(libpry.test.AutoTree):
 
 
 tests = [
+    uRaises(),
     uSetupCheck(),
     FullTree(), [
         uOutput(libpry.test._OutputZero),

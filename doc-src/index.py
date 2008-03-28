@@ -15,6 +15,7 @@ ns.sidebar = countershape.widgets.SiblingPageIndex(
 this.layout = countershape.layout.TwoPane("yui-t2", "doc3")
 
 ns.test_basic = readFrom("../examples/test_basic.py")
+ns.libpry = countershape.grok.grok("../libpry")
 
 pages = [
     Page("index.html", "Introduction"),
