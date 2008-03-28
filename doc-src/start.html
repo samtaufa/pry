@@ -1,0 +1,58 @@
+
+A basic example
+===============
+
+<!--(block | pySyntax)-->
+$!test_basic!$
+<!--(end)-->
+
+<div class="fname">(examples/test_basic.py)</div>
+
+This example should look familiar to anyone who has used the built-in Python
+__unittest__ module. The main points to note are:
+
+    * __setUpAll__ and __tearDownAll__ run before and after the group of
+    contained tests as a whole.
+
+    * __setUp__ and __tearDown__ run before and after each of the contained
+    tests.
+
+    * __AutoTree__ turns methods with names of the form "test_*" into test
+    objects automatically. 
+
+    * Unlike the built-in __unittest__ module, __pry__ does _not_ automatically
+    instantiate test suites. Instead, they need to be instantiated manually and
+    added to a __tests__ list in the module scope.
+
+    * Test assertions are written using the __assert__ keyword.
+    Assertion errors are caught, and the failing expression is parsed and
+    re-evaluated to give an informative error message.
+
+
+Running the tests
+=================
+
+You can find the file above at <span>examples/test_basic.py</span> in the
+__pry__ distribution. From the examples directory, we can run the tests as
+follows:
+
+
+<pre class="output">
+> pry test_basic.py
+.E.
+
+ERRORS
+======
+./test_basic.MySuite.test_three
+    Traceback (most recent call last):
+      File "./test_basic.py", line 25, in test_three
+    assert d["foo"] == "two"
+    AssertionError
+
+    :: Re-evaluating expression:
+    :: d["foo"] == "two"
+    :: 'one' == 'two'
+
+
+3 tests (pass: 2, fail: 1) - 0.001s
+</pre>
