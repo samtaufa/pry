@@ -1,0 +1,3 @@
+base = ..
+coverage = ../module
+exclude = ../module/exclude.py

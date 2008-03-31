@@ -504,7 +504,7 @@ class uOutput(libpry.test.AutoTree):
         self.output.final(self["profileRoot"])
 
     
-class uTestNode(libpry.test.AutoTree):
+class uTest(libpry.test.AutoTree):
     def test_run_error(self):
         t = TTree()
         x = t.search("test_fail")[0]
@@ -517,7 +517,7 @@ class uTestNode(libpry.test.AutoTree):
         assert isinstance(x.callState, libpry.test._OK)
 
     def test_call(self):
-        t = libpry.test.TestNode("name")
+        t = libpry.test.Test("name")
         libpry.test.raises(NotImplementedError, t)
 
 
@@ -566,7 +566,7 @@ tests = [
         u_RootNode(),
         u_DirNode(),
     ],
-    uTestNode(),
+    uTest(),
     uAutoTree(),
     u_Output(),
     uCallableNode(),

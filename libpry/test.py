@@ -151,7 +151,7 @@ class _OutputOne(_OutputZero):
         return "[T]"
 
     def nodePass(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             return "."
 
     def tearDownAllError(self, node):
@@ -228,21 +228,21 @@ class _OutputOne(_OutputZero):
 
 class _OutputTwo(_OutputOne):
     def nodePre(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             p = node.fullPath()
             padding = "."*(self.maxname - len(p))
             return "%s .%s "%(p, padding)
 
     def nodePost(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             return "\n"
 
     def nodeError(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             return "FAIL"
 
     def nodePass(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             return "OK"
 
     def setUpError(self, node):
@@ -274,7 +274,7 @@ class _OutputTwo(_OutputOne):
 
 class _OutputThree(_OutputTwo):
     def nodePass(self, node):
-        if isinstance(node, TestNode):
+        if isinstance(node, Test):
             return "OK (%.3fs)"%node.callState.time
 
 
@@ -307,7 +307,7 @@ class _Output:
 class _TestBase(_tinytree.Tree):
     """
         Automatically turns methods or arbitrary callables of the form test_*
-        into TestNodes.
+        into Tests.
     """
     #grok:include
     # The name of this node. Names should not contain periods or spaces.
@@ -384,7 +384,7 @@ class _TestBase(_tinytree.Tree):
         #grok:exclude
         lst = []
         for i in self.preOrder():
-            if isinstance(i, TestNode):
+            if isinstance(i, Test):
                 lst.append(i)
         return lst
 
@@ -399,7 +399,7 @@ class _TestBase(_tinytree.Tree):
             Does this node have currently selected child tests?
         """
         for i in self.preOrder():
-            if isinstance(i, TestNode) and i._selected:
+            if isinstance(i, Test) and i._selected:
                  return True
         return False
 
@@ -665,7 +665,7 @@ class TestContainer(_TestBase):
 class AutoTree(TestContainer):
     """
         TestContainer that Automatically adds methods of the form test_* as child
-        TestNodes.
+        Tests.
     """
     _testPrefix = "test_"
     def __init__(self, children=None, name=AUTO):
@@ -676,7 +676,7 @@ class AutoTree(TestContainer):
             If set to the special constant AUTO, the name is computed
             automatically from the class name of this instance.
 
-            Automatically adds methods of the form test_* as child TestNodes.
+            Automatically adds methods of the form test_* as child Tests.
         """
         TestContainer.__init__(self, children, name=name)
         k = dir(self)
@@ -686,7 +686,7 @@ class AutoTree(TestContainer):
                 self.addChild(CallableNode(i, getattr(self, i)))
 
 
-class TestNode(_TestBase):
+class Test(_TestBase):
     """
         A node representing a test.
     """
@@ -724,16 +724,16 @@ class TestNode(_TestBase):
         raise NotImplementedError
 
 
-class CallableNode(TestNode):
+class CallableNode(Test):
     """
-        A utility wrapper to create a TestNode from a callable.
+        A utility wrapper to create a Test from a callable.
     """
     def __init__(self, name, obj):
         """
             :name Name of this test.
             :obj A callable object.
         """
-        TestNode.__init__(self, name)
+        Test.__init__(self, name)
         self.obj = obj
 
     def __call__(self):
