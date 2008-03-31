@@ -111,7 +111,7 @@ def main():
         print "Total: %s"%len(r.tests())
         sys.exit()
     else:
-        r.run(output, options.benchmark)
+        r._run(output, options.benchmark)
         output.final(r)
     
 

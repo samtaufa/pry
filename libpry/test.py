@@ -1,9 +1,4 @@
-"""
-    A tree-based unit test system.
 
-    Each test is a node in a tree of tests. Each test can have a setUp and
-    tearDown method - these get run before and after each child node is run.
-"""
 import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
 import linecache, shutil, tempfile
 import _tinytree, explain, coverage, utils
@@ -11,9 +6,23 @@ import _tinytree, explain, coverage, utils
 _TestGlob = "test_*.py"
 
 
-def raises(exc, callableObj, *args, **kwargs):
+def raises(exc, obj, *args, **kwargs):
+    """
+        Assert that a callable raises a specified exception.
+
+        :exc An exception class or a string. If a class, assert that an
+        exception of this type is raised. If a string, assert that the string
+        occurs in the string representation of the exception, based on a
+        case-insenstivie match.
+
+        :obj A callable object.
+
+        :args Arguments to be passsed to the callable.
+
+        :kwargs Arguments to be passed to the callable.
+    """
     try:
-        apply(callableObj, args, kwargs)
+        apply(obj, args, kwargs)
     except Exception, v:
         if utils.isStringLike(exc):
             if exc.lower() in str(v).lower():
@@ -37,6 +46,13 @@ def raises(exc, callableObj, *args, **kwargs):
 
 
 class TmpDirMixin:
+    """
+        A utility mixin that creates a temporary directory during setup, and
+        removes it during teardown. The directory path is inserted into the
+        test namespace as follows:
+            
+            self["tmpdir"] = path
+    """
     def setUp(self):
         self["tmpdir"] = tempfile.mkdtemp()
 
@@ -45,10 +61,7 @@ class TmpDirMixin:
             shutil.rmtree(self["tmpdir"])
 
 
-class Error:
-    """
-        Error tests False.
-    """
+class _Error:
     def __init__(self, node, msg):
         self.node, self.msg = node, msg
         self.exctype, self.excvalue, self.tb = sys.exc_info()
@@ -106,10 +119,7 @@ class Error:
         return "\n".join(strs)
 
 
-class OK:
-    """
-       OK tests True.
-    """
+class _OK:
     def __init__(self, node, time):
         self.node, self.time = node, time
 
@@ -117,7 +127,7 @@ class OK:
 class _OutputZero:
     def __init__(self, root):
         self.root = root
-        self.maxname = self.root.maxPathLen()
+        self.maxname = self.root._maxPathLen()
 
     def nodePre(self, node): pass
     def nodePost(self, node): pass
@@ -152,7 +162,7 @@ class _OutputOne(_OutputZero):
 
     def final(self, root):
         lst = ["\n"]
-        if isinstance(root.goState, Error):
+        if isinstance(root.goState, _Error):
             root.goState.msg = None
             s = [
                     "Internal error:",
@@ -160,14 +170,14 @@ class _OutputOne(_OutputZero):
                 ]
             return "".join(s)
 
-        errs = root.allError()
+        errs = root.allErrors()
         if errs:
             lst.append("\nERRORS\n======\n")
             for i in errs:
                 lst.append(str(i.getError()))
                 lst.append("\n")
 
-        if root.goState and not root.isError():
+        if root.goState and not root.getError():
             infostr = [
                 "pass: %s"%len(root.allPassed())
             ]
@@ -236,7 +246,7 @@ class _OutputTwo(_OutputOne):
             return "OK"
 
     def setUpError(self, node):
-        cnt = len(node.allSkip())
+        cnt = len(node._allSkip())
         return "STOP\n\t** setUp failed, skipping %s tests"%cnt
 
     def setUpAllError(self, node):
@@ -255,7 +265,7 @@ class _OutputTwo(_OutputOne):
         return "".join(lst)
 
     def tearDownError(self, node):
-        cnt = len(node.allSkip())
+        cnt = len(node._allSkip())
         add = ""
         if cnt:
             add = ", skipping %s tests"%cnt
@@ -299,16 +309,26 @@ class _TestBase(_tinytree.Tree):
         Automatically turns methods or arbitrary callables of the form test_*
         into TestNodes.
     """
+    #grok:include
     # The name of this node. Names should not contain periods or spaces.
     name = None
     _selected = True
     def __init__(self, children=None, name=None):
+        """
+            :children A nested list of child nodes
+            :name The name of this node. Should not contain periods or spaces.
+            Can optionally be set as a class variable in subclasses.
+        """
         _tinytree.Tree.__init__(self, children)
         if name:
             self.name = name
         self._ns = {}
 
     def __getitem__(self, key):
+        """
+            Retrieve an item from the tree namespace. Keys are looked up in
+            this node, and on all nodes to the root.
+        """
         if self._ns.has_key(key):
             return self._ns[key]
         elif self.parent:
@@ -317,9 +337,12 @@ class _TestBase(_tinytree.Tree):
             raise KeyError, "No such data item: %s"%key
 
     def __setitem__(self, key, value):
+        """
+            Set an item in this node's namespace.
+        """
         self._ns[key] = value
 
-    def _run(self, meth, dstObj, name, repeat, profile, *args, **kwargs):
+    def _runCallable(self, meth, dstObj, name, repeat, profile, *args, **kwargs):
         """
             Utility method that runs a callable, and sets a State object.
             
@@ -340,34 +363,38 @@ class _TestBase(_tinytree.Tree):
         except Exception, e:
             setattr(
                 dstObj, name + "State",
-                Error(
+                _Error(
                     dstObj,
                     "" if name == "call" else name
                 )
             )
             return True
-        if r is not NOTRUN:
+        if r is not _NOTRUN:
             if profile:
                 pstream = cStringIO.StringIO()
                 dstObj.profStats = pstats.Stats(prof, stream=pstream)
                 dstObj.profStats.sort_stats(profile)
-            setattr(dstObj, name + "State", OK(dstObj, stop-start))
+            setattr(dstObj, name + "State", _OK(dstObj, stop-start))
         return False
 
     def tests(self):
         """
-            All test nodes.
+            Return a pre-order list of all test nodes in this tree.
         """
+        #grok:exclude
         lst = []
         for i in self.preOrder():
             if isinstance(i, TestNode):
                 lst.append(i)
         return lst
 
-    def maxPathLen(self):
+    def _maxPathLen(self):
+        """
+            Return the maximum path length for any node in this tree.
+        """
         return max([len(i.fullPath()) for i in self.preOrder()])
 
-    def hasTests(self):
+    def _hasTests(self):
         """
             Does this node have currently selected child tests?
         """
@@ -380,35 +407,41 @@ class _TestBase(_tinytree.Tree):
         """
             Remove all internal nodes that have no test children.
         """
+        #grok:exclude
         for i in self.postOrder():
-            if not i.hasTests() and i.parent:
+            if not i._hasTests() and i.parent:
                 i.remove()
 
-    def allError(self):
+    def allErrors(self):
         """
-            All nodes that errored.
+            A list of sub-nodes that had errors, in pre-order.
         """
-        return [i for i in self.preOrder() if i.isError()]
+        #grok:exclude
+        return [i for i in self.preOrder() if i.getError()]
 
     def allPassed(self):
         """
-            All test nodes that passed.
+            A list of sub-nodes that passed, in pre-order.
         """
+        #grok:exclude
         return [i for i in self.tests() if i.isPassed()]
 
     def allNotRun(self):
         """
-            All test nodes that that have not been run.
+            A list of sub-nodes that have not been run.
         """
+        #grok:exclude
         return [i for i in self.tests() if i.isNotRun()]
 
-    def allSkip(self):
+    def _allSkip(self):
         """
             If we skipped from this test onwards, not including this test
             itself, how many tests would we skip?
 
-            This amounts to a) and all our children, and b) all our "right"
-            siblings, and all their children. 
+            This amounts to: 
+            
+                - All our children
+                - Plus all our "right" siblings, and all their children. 
         """
         lst = []
         seen = False
@@ -419,7 +452,7 @@ class _TestBase(_tinytree.Tree):
                 lst.extend(i.tests())
         return [i for i in lst if not i is self]
 
-    def hasProfStats(self):
+    def _hasProfStats(self):
         """
             Does this node or any of its children have profile statistics?
         """
@@ -428,30 +461,24 @@ class _TestBase(_tinytree.Tree):
                 return True
         return False
 
-    def isError(self):
-        """
-            True if this node has experienced a test failure.
-        """
-        for i in self._states():
-            if isinstance(i, Error):
-                return True
-        return False
-
     def getError(self):
         """
-            Return the Error object for this node. Raises an exception if there
-            is none.
+            Return the _Error object for this node. Returns None if no error
+            occurred.
         """
+        #grok:exclude
         for i in self._states():
-            if isinstance(i, Error):
+            if isinstance(i, _Error):
                 return i
-        raise ValueError, "No error for this node."
+        return None
 
     def isNotRun(self):
         """
-            True if this node was not run at all. Note that a node that
-            experienced failure during setup will return False.
+            True if this node was not run at all. Note that a node that this
+            method will return False for a test that experienced failure during
+            setup.
         """
+        #grok:exclude
         for i in self._states():
             if i is not None:
                 return False
@@ -459,16 +486,18 @@ class _TestBase(_tinytree.Tree):
 
     def isPassed(self):
         """
-            True if this node has passed.
+            True if this node has been run and has passed.
         """
-        if (not self.isError()) and (not self.isNotRun()):
+        #grok:exclude
+        if (not self.getError()) and (not self.isNotRun()):
             return True
         return False
 
     def fullPathParts(self):
         """
-            Return the components text path of a node.
+            Return the components of the text path of a node as a list.
         """
+        #grok:exclude
         lst = []
         for i in self.pathFromRoot():
             if i.name:
@@ -479,12 +508,16 @@ class _TestBase(_tinytree.Tree):
         """
             Return the full text path of a node as a string.
         """
+        #grok:exclude
         return ".".join(self.fullPathParts())
 
     def search(self, spec):
         """
             Search for matching child nodes using partial path matching.
+
+            :spec A . delimited string specifying a partial test path.
         """
+        #grok:exclude
         # Sneakily (but inefficiently) use string 'in' operator for subsequence
         # searches. This doesn't matter for now, but we can do better.
         xspec = "." + spec + "."
@@ -499,10 +532,13 @@ class _TestBase(_tinytree.Tree):
 
     def mark(self, spec):
         """
+            Mark child-nodes for running according to a specification.
+
             - First, un-select all nodes.
-            - Now find all matches for spec. For each match, select all direct
-              ancestors and all children as
+            - Find all matches for spec. For each match, select all direct
+              ancestors and all children for running.
         """
+        #grok:exclude
         for i in self.preOrder():
             i._selected = False
         for i in self.search(spec):
@@ -512,6 +548,12 @@ class _TestBase(_tinytree.Tree):
                 j._selected = True
 
     def printStructure(self, outf=sys.stdout):
+        """
+            Print the high-level structure of the test suite.
+
+            :outf Output file descriptor.
+        """
+        #grok:exclude
         for i in self.preOrder():
             if i.name:
                 parts = i.fullPathParts()
@@ -519,8 +561,9 @@ class _TestBase(_tinytree.Tree):
                     print >> outf, "    "*(len(parts)-1),
                 print >> outf, i.name
 
+#Flag object for TestTree
 AUTO = object()
-NOTRUN = object()
+_NOTRUN = object()
 
 class TestTree(_TestBase):
     """
@@ -529,30 +572,55 @@ class TestTree(_TestBase):
     _base = None
     _exclude = None
     _include = None
-    name = None
-    # An OK object if setUp succeeded, an Error object if it failed, and None
-    # if no setUp was run.
-    setUpState = None
-    # An OK object if tearDown succeeded, an Error object if it failed, and None
-    # if no tearDown was run.
-    tearDownState = None
-    # An OK object if setupAll succeeded, an Error object if it failed, and None
-    # if no tearDown was run.
-    setUpAllState = None
-    # An OK object if teardownAll succeeded, an Error object if it failed, and
-    # None if no tearDown was run.
-    tearDownAllState = None
     def __init__(self, children=None, name=AUTO):
+        """
+            :children A nested list of subnodes.
+
+            :name The name of this node. Should not contain spaces or periods.
+            If set to the special constant AUTO, the name is computed
+            automatically from the class name of this instance.
+        """
         if self.name:
             name = self.name
         elif name is AUTO:
             name = self.__class__.__name__
         _TestBase.__init__(self, children, name)
+        # An _OK object if setUp succeeded, an _Error object if it failed, and None
+        # if no setUp was run.
+        self.setUpState = None
+        # An _OK object if tearDown succeeded, an _Error object if it failed, and None
+        # if no tearDown was run.
+        self.tearDownState = None
+        # An _OK object if setupAll succeeded, an _Error object if it failed, and None
+        # if no tearDown was run.
+        self.setUpAllState = None
+        # An _OK object if teardownAll succeeded, an _Error object if it failed, and
+        # None if no tearDown was run.
+        self.tearDownAllState = None
 
-    def setUp(self): return NOTRUN
-    def setUpAll(self): return NOTRUN
-    def tearDown(self): return NOTRUN
-    def tearDownAll(self): return NOTRUN
+    def setUp(self):
+        """
+            Run before each child is run.
+        """
+        return _NOTRUN
+
+    def setUpAll(self):
+        """
+            Run once before any children are run.
+        """
+        return _NOTRUN
+
+    def tearDown(self):
+        """
+            Run after each child is run.
+        """
+        return _NOTRUN
+
+    def tearDownAll(self):
+        """
+            Run after all children have run.
+        """
+        return _NOTRUN
 
     def _states(self):
         return [
@@ -562,44 +630,54 @@ class TestTree(_TestBase):
                     self.tearDownState,
                 ]
 
-    def run(self, output, repeat, profile):
+    def _run(self, output, repeat, profile):
         """
             Run the tests contained in this suite.
         """
-        if self._run(self.setUpAll, self, "setUpAll", 1, None):
+        if self._runCallable(self.setUpAll, self, "setUpAll", 1, None):
             output.setUpAllError(self)
             return
         for i in self.children:
             output.nodePre(i)
 
-            if self._run(self.setUp, i, "setUp", 1, None):
+            if self._runCallable(self.setUp, i, "setUp", 1, None):
                 output.setUpError(i)
                 output.nodePost(i)
                 return
 
-            if i.run(output, repeat, profile):
+            if i._run(output, repeat, profile):
                 output.nodeError(i)
             else:
                 output.nodePass(i)
 
-            if self._run(self.tearDown, i, "tearDown", 1, None):
+            if self._runCallable(self.tearDown, i, "tearDown", 1, None):
                 output.tearDownError(i)
                 output.nodePost(i)
                 return
 
             output.nodePost(i)
 
-        if self._run(self.tearDownAll, self, "tearDownAll", 1, None):
+        if self._runCallable(self.tearDownAll, self, "tearDownAll", 1, None):
             output.tearDownAllError(self)
             return
 
 
 class AutoTree(TestTree):
     """
-        Automatically adds methods of the form test_* as child TestNodes.
+        TestTree that Automatically adds methods of the form test_* as child
+        TestNodes.
     """
     _testPrefix = "test_"
     def __init__(self, children=None, name=AUTO):
+        """
+            :children Optional nested list of subnodes.
+
+            :name The name of this node. Should not contain spaces or periods.
+            If set to the special constant AUTO, the name is computed
+            automatically from the class name of this instance.
+
+            Automatically adds methods of the form test_* as child TestNodes.
+        """
         TestTree.__init__(self, children, name=name)
         k = dir(self)
         k.sort()
@@ -610,24 +688,27 @@ class AutoTree(TestTree):
 
 class TestNode(_TestBase):
     """
-        A node representing an actual runnable test.
+        A node representing a test.
     """
-    # An OK object if run succeeded, an Error object if it failed, and None
-    # if the test was not run.
-    callState = None
-    # An OK object if setUp succeeded, an Error object if it failed, and None
-    # if no setUp was run.
-    setUpState = None
-    # An OK object if setUp succeeded, an Error object if it failed, and None
-    # if no tearDown was run.
-    tearDownState = None
-    # A pstats.Stats object if profile was run, else None
-    profStats = None
     def __init__(self, name):
+        """
+            :name The name of this node. Should not contain spaces or periods.
+        """
         _TestBase.__init__(self, None, name=name)
+        # An _OK object if run succeeded, an _Error object if it failed, and None
+        # if the test was not run.
+        self.callState = None
+        # An _OK object if setUp succeeded, an _Error object if it failed, and None
+        # if no setUp was run.
+        self.setUpState = None
+        # An _OK object if setUp succeeded, an _Error object if it failed, and None
+        # if no tearDown was run.
+        self.tearDownState = None
+        # A pstats.Stats object if profile was run, else None
+        self.profStats = None
 
-    def run(self, output, repeat, profile):
-        return self._run(self.__call__, self, "call", repeat, profile)
+    def _run(self, output, repeat, profile):
+        return self._runCallable(self.__call__, self, "call", repeat, profile)
 
     def _states(self):
         return [
@@ -637,25 +718,34 @@ class TestNode(_TestBase):
                 ]
 
     def __call__(self):
+        """
+            This method contains the actual test.
+        """
         raise NotImplementedError
 
 
 class CallableNode(TestNode):
     """
-        A utility wrapper to create a TestNode from an arbitrary callable.
+        A utility wrapper to create a TestNode from a callable.
     """
-    def __init__(self, name, meth):
+    def __init__(self, name, obj):
+        """
+            :name Name of this test.
+            :obj A callable object.
+        """
         TestNode.__init__(self, name)
-        self.meth = meth
+        self.obj = obj
 
     def __call__(self):
-        self.meth()
+        #grok:exclude
+        self.obj()
 
     def __repr__(self):
+        #grok:exclude
         return "CallableNode: %s"%self.name
 
 
-class FileNode(TestTree):
+class _FileNode(TestTree):
     # The special magic flag allows pry to run coverage analysis on its own 
     # test suite
     def __init__(self, dirname, filename, magic):
@@ -684,7 +774,7 @@ class FileNode(TestTree):
             self.addChildrenFromList(m.tests)
 
     def __repr__(self):
-        return "FileNode: %s"%self.filename
+        return "_FileNode: %s"%self.filename
 
 
 class _DirNode(TestTree):
@@ -716,14 +806,14 @@ class _DirNode(TestTree):
             self.coverage = coverage.Coverage(
                 self.coveragePath,
                 self.excludeList,
-                True if cover is DUMMY else False
+                True if cover is _DUMMY else False
             )
             self.coverage.start()
         l = os.listdir(".")
         l.sort()
         for i in l:
             if fnmatch.fnmatch(i, glob):
-                self.addChild(FileNode(self.dirPath, i, self.magic))
+                self.addChild(_FileNode(self.dirPath, i, self.magic))
         self._post()
 
     def _pre(self):
@@ -753,7 +843,7 @@ class _DirNode(TestTree):
 
 
 # Do a dummy coverage run
-DUMMY = object()
+_DUMMY = object()
 class _RootNode(TestTree):
     """
         This node is the parent of all tests.
@@ -764,9 +854,9 @@ class _RootNode(TestTree):
         self.cover = cover
         self.profile = profile
 
-    def run(self, output, repeat):
-        self._run(
-            TestTree.run,
+    def _run(self, output, repeat):
+        self._runCallable(
+            TestTree._run,
             self,
             "go",
             1,
