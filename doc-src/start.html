@@ -17,8 +17,8 @@ __unittest__ module. The main points to note are:
     * __setUp__ and __tearDown__ run before and after each of the contained
     tests.
 
-    * __AutoTree__ turns methods with names of the form "test_*" into test
-    objects automatically. 
+    * __pry__ is a tree-based test framework. __AutoTree__ turns methods with
+    names of the form "test_*" into test nodes automatically. 
 
     * Unlike the built-in __unittest__ module, __pry__ does _not_ automatically
     instantiate test suites. Instead, they need to be instantiated manually and
@@ -45,7 +45,7 @@ ERRORS
 ======
 ./test_basic.MySuite.test_three
     Traceback (most recent call last):
-      File "./test_basic.py", line 25, in test_three
+      File "./test_basic.py", line 27, in test_three
     assert d["foo"] == "two"
     AssertionError
 

@@ -2,19 +2,20 @@ import libpry
 
 class MySuite(libpry.AutoTree):
     def setUpAll(self):
-        pass
+        self.all_fixture = True
 
     def tearDownAll(self):
-        pass
+        self.all_fixture = False
 
     def setUp(self):
-        pass
+        self.fixture = True
 
     def tearDown(self):
-        pass
+        self.fixture = False
 
     def test_one(self):
-        assert True
+        assert self.fixture
+        assert self.all_fixture
 
     def test_two(self):
         d = dict()
@@ -22,8 +23,9 @@ class MySuite(libpry.AutoTree):
 
     def test_three(self):
         d = dict(foo="one")
+        # This will fail:
         assert d["foo"] == "two"
-           
+
 tests = [
     MySuite()
 ]

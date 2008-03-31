@@ -1,0 +1,14 @@
+
+Introduction
+============
+
+__pry__ test trees consist of two types of nodes:
+
+    - __TestTree__ objects are internal nodes that can contain tests or other
+      __TestTrees__. These objects set up and tear down fixtures for the nodes
+      they contain.
+    - __TestNode__ objects are leaf nodes corresponding to actual unit tests.
+      Each __TestNode__ object corresponds to a single test. __TestNode__
+      objects must be direct children of a __TestTree__ object.
+
+

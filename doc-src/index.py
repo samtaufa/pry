@@ -20,10 +20,9 @@ ns.libpry = countershape.grok.grok("../libpry")
 pages = [
     Page("index.html", "Introduction"),
     Page("start.html", "Getting Started"),
-    Page("tests.html", "Writing Tests"),
     Page("tree.html",  "Test Trees"),
-    Page("cli.html",   "Command-Line Interface"),
-    Page("coverage.html",   "Coverage analysis and profiling"),
+    Page("coverage.html",   "Coverage analysis"),
+    Page("cli.html",   "The pry tool"),
     Page("api.html",   "API"),
     Page("admin.html", "Administrivia")
 ]

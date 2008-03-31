@@ -561,11 +561,11 @@ class _TestBase(_tinytree.Tree):
                     print >> outf, "    "*(len(parts)-1),
                 print >> outf, i.name
 
-#Flag object for TestTree
+#Flag object for TestContainer
 AUTO = object()
 _NOTRUN = object()
 
-class TestTree(_TestBase):
+class TestContainer(_TestBase):
     """
         A container for tests.
     """
@@ -662,9 +662,9 @@ class TestTree(_TestBase):
             return
 
 
-class AutoTree(TestTree):
+class AutoTree(TestContainer):
     """
-        TestTree that Automatically adds methods of the form test_* as child
+        TestContainer that Automatically adds methods of the form test_* as child
         TestNodes.
     """
     _testPrefix = "test_"
@@ -678,7 +678,7 @@ class AutoTree(TestTree):
 
             Automatically adds methods of the form test_* as child TestNodes.
         """
-        TestTree.__init__(self, children, name=name)
+        TestContainer.__init__(self, children, name=name)
         k = dir(self)
         k.sort()
         for i in k:
@@ -745,12 +745,12 @@ class CallableNode(TestNode):
         return "CallableNode: %s"%self.name
 
 
-class _FileNode(TestTree):
+class _FileNode(TestContainer):
     # The special magic flag allows pry to run coverage analysis on its own 
     # test suite
     def __init__(self, dirname, filename, magic):
         modname = filename[:-3]
-        TestTree.__init__(self, name=os.path.join(dirname, modname))
+        TestContainer.__init__(self, name=os.path.join(dirname, modname))
         self.dirname, self.filename = dirname, filename
         m = __import__(modname)
         # When pry starts up, it loads the libpry module. In order for the
@@ -777,13 +777,13 @@ class _FileNode(TestTree):
         return "_FileNode: %s"%self.filename
 
 
-class _DirNode(TestTree):
+class _DirNode(TestContainer):
     """
         A node representing a directory of tests. 
     """
     CONF = ".pry"
     def __init__(self, path, cover):
-        TestTree.__init__(self, name=None)
+        TestContainer.__init__(self, name=None)
         if os.path.isdir(path):
             self.dirPath = path
             glob = _TestGlob
@@ -844,19 +844,19 @@ class _DirNode(TestTree):
 
 # Do a dummy coverage run
 _DUMMY = object()
-class _RootNode(TestTree):
+class _RootNode(TestContainer):
     """
         This node is the parent of all tests.
     """
     goState = None
     def __init__(self, cover, profile):
-        TestTree.__init__(self, name=None)
+        TestContainer.__init__(self, name=None)
         self.cover = cover
         self.profile = profile
 
     def _run(self, output, repeat):
         self._runCallable(
-            TestTree._run,
+            TestContainer._run,
             self,
             "go",
             1,
