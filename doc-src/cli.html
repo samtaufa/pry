@@ -1,3 +1,25 @@
 
 $!examples.pry("", "--help")!$
 
+Test Selection
+==============
+
+The optional test filter that can be specified to __pry__ operates as follows:
+    
+    - First, all tests in the current directory are loaded (recursively if the -r
+      flag is specified).
+
+    - Then, the filter is applied to select a subset of tests based on a
+      partial match strategy.
+
+The following examples illustrate the process (commands are run in the
+__examples__ subdirectory):
+
+$!examples.pry("examples", "-l")!$
+
+$!examples.pry("examples", "-l test_basic")!$
+
+$!examples.pry("examples", "-l test_one")!$
+
+$!examples.pry("examples", "-l ProfTest.test_one")!$
+
