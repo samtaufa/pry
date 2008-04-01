@@ -17,12 +17,13 @@ this.layout = countershape.layout.TwoPane("yui-t2", "doc3")
 ns.test_basic = readFrom("../examples/test_basic.py")
 ns.test_trees = readFrom("../examples/test_trees.py")
 ns.test_autotree = readFrom("../examples/test_autotree.py")
+ns.test_annotation = readFrom("../examples/project/module/two.py")
 
 ns.libpry = countershape.grok.grok("../libpry")
 
 pages = [
     Page("index.html", "Introduction"),
-    Page("start.html", "Test Basics"),
+    Page("start.html", "Writing Tests"),
     Directory("trees"),
     Page("coverage.html",   "Coverage"),
     Directory("coverage"),

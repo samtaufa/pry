@@ -61,7 +61,8 @@ class File:
 
     @property
     def numExecuted(self):
-        return len(self.executed - self.exclusions)
+        # FIXME: Look closer for a reason why this is needed...
+        return min(len(self.executed - self.exclusions), self.numExecutable)
 
     @property
     def notExecuted(self):

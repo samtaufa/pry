@@ -1,5 +1,6 @@
 coverage = ../libpry
 exclude =   .
            ../libpry/_tinytree.py 
-_magic = True
 
+# The special magic flag is for internal use by pry only!
+_magic = True
