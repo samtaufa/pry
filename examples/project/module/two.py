@@ -1,4 +1,3 @@
-
 def method():
     if True:
         return 1
@@ -6,4 +5,3 @@ def method():
     else:
         return 2
     #end nocover
-

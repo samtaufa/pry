@@ -5,10 +5,10 @@ import libpry
 
 def main():
     from optparse import OptionParser, OptionGroup
-    parser = OptionParser(version="%prog 0.1")
-    parser.add_option("-a", "--annotate",
-                      action="store_true", dest="annotate",
-                      help="Annotated coverage output.")
+    parser = OptionParser(
+                usage = "%prog [options] [testfilter]",
+                version="%prog 0.1",
+            )
     parser.add_option("-c", "--clear",
                       action="store_true", dest="clear",
                       help="Clear all .pyc and .pyo files in the project base"
@@ -22,7 +22,7 @@ def main():
                       help="Recurse through child directories.")
     parser.add_option("-s", "--stats",
                       action="store_true", dest="stats",
-                      help="Give coverage stats")
+                      help="Print coverage summary.")
     parser.add_option("-n", "--benchmark",
                       action="store", dest="benchmark", type="int", default=1,
                       help="Run each test N times.")
@@ -31,11 +31,11 @@ def main():
                       help="Quiet.")
     parser.add_option("-v", "--verbose",
                       action="count", dest="verbose", default=1,
-                      help="Verbose.")
+                      help="Increase verbosity. Can be passed multiple times.")
     parser.add_option(
                         "--debug-dump",
                         action="store_true", dest="debug",
-                        help="For debugging only. Like list,"
+                        help="For debugging only. Like -l,"
                            " but dump the full tree structure."
                     )
 
@@ -80,7 +80,7 @@ def main():
     else:
         parser.error("Please pass only one argument.")
 
-    if options.annotate or options.stats:
+    if options.stats:
         coverage = True
     else:
         coverage = False

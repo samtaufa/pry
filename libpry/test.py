@@ -217,8 +217,9 @@ class _OutputOne(_OutputZero):
                 width, funcs = s.get_print_list([])
                 s.print_title()
                 for f in funcs:
-                    # We don't want to know about libpry itself.
-                    if not "/libpry/" in f[0]:
+                    # We don't want to know about libpry itself or the profile
+                    # disable function.
+                    if not "/libpry/" in f[0] and not "_lsprof" in f[2]:
                         s.print_line(f)
                 lst.append("\n")
                 lst.append(s.stream.getvalue())

@@ -7,19 +7,9 @@ the method names.
 The following code is functionally equivalent to the example given in the
 previous section:
 
-<!--(block | pySyntax)-->
-$!test_autotree!$
-<!--(end)-->
-<div class="fname">(examples/test_autotree.py)</div>
+$!examples.py("examples/test_autotree.py")!$
 
 Test hierarchy:
 
-<pre class="output">
-> pry -l test_autotree.py
-./test_autotree
-     MyContainer
-         test_one
-         test_two
-Total: 2
-</pre>
+$!examples.pry("examples", "-l test_autotree.py")!$
 

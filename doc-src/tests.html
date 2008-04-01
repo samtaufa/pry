@@ -2,11 +2,7 @@
 A basic example
 ===============
 
-<!--(block | pySyntax)-->
-$!test_basic!$
-<!--(end)-->
-
-<div class="fname">(examples/test_basic.py)</div>
+$!examples.py("examples/test_basic.py")!$
 
 This example should look familiar to anyone who has used the built-in Python
 __unittest__ module. The main points to note are:
@@ -32,27 +28,8 @@ __unittest__ module. The main points to note are:
 Running the tests
 =================
 
-You can find the file above at <span>examples/test_basic.py</span> in the
-__pry__ distribution. From the examples directory, we can run the tests as
-follows:
+From the <span>examples</span> in the __pry__ distribution, we can run the
+tests as follows:
 
+$!examples.pry("examples", "test_basic.py")!$
 
-<pre class="output">
-> pry test_basic.py
-.E.
-
-ERRORS
-======
-./test_basic.MySuite.test_three
-    Traceback (most recent call last):
-      File "./test_basic.py", line 27, in test_three
-    assert d["foo"] == "two"
-    AssertionError
-
-    :: Re-evaluating expression:
-    :: d["foo"] == "two"
-    :: 'one' == 'two'
-
-
-3 tests (pass: 2, fail: 1) - 0.001s
-</pre>
