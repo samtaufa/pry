@@ -14,7 +14,9 @@ ns.sidebar = countershape.widgets.SiblingPageIndex(
                 exclude=['countershape']
             )
 this.layout = countershape.layout.TwoPane("yui-t2", "doc3")
+this.titlePrefix = "Pry Manual - "
 
+# This should be factored out into a library and tested...
 class Examples:
     def __init__(self, d):
         self.d = os.path.abspath(d)
