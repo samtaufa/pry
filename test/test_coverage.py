@@ -73,18 +73,18 @@ class uFile(libpry.AutoTree):
 
     def test_nicePath(self):
         f = libpry.coverage.File(None)
-        f.path = "/foo/bar.py"
-        assert f.nicePath("/foo") == "bar.py"
+        f.path = os.path.sep[0] + os.path.join("foo", "bar.py")
+        assert f.nicePath(os.path.sep[0] + "foo") == "bar.py"
         assert f.nicePath(f.path) == "bar.py"
 
     def test_cmp(self):
-        f1 = libpry.coverage.File("testmodule/test_a.py")
-        f2 = libpry.coverage.File("testmodule/test_a.py")
+        f1 = libpry.coverage.File(os.path.join("testmodule", "test_a.py"))
+        f2 = libpry.coverage.File(os.path.join("testmodule", "test_a.py"))
         f1.executed.add(f1.executable.pop())
         assert cmp(f1, f2)
 
     def test_annotated(self):
-        f = libpry.coverage.File("testmodule/test_a.py")
+        f = libpry.coverage.File(os.path.join("testmodule", "test_a.py"))
         assert f.getAnnotation()
 
     def test_stats(self):

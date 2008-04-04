@@ -432,13 +432,13 @@ class u_RootNode(libpry.test.AutoTree):
         r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", True)
         assert r.search("test_one")
-        assert r.search("testmodule/test_a.uOne.test_one")
-        assert r.search("testmodule/two/test_two")
+        assert r.search(os.path.join("testmodule", "test_a.uOne.test_one"))
+        assert r.search(os.path.join("testmodule", "two", "test_two"))
         assert not r.search("nonexistent")
 
         r = libpry.test._RootNode(False, None)
         r.addPath("testmodule", False)
-        assert not r.search("testmodule/two/test_two")
+        assert not r.search(os.path.join("testmodule", "two", "test_two"))
         assert r.search("test_one")
 
     def test_errFinal(self):
@@ -543,7 +543,7 @@ class u_Output(libpry.test.AutoTree):
 
 class u_FileNode(libpry.test.AutoTree):
     def test_repr(self):
-        n = self["root"].search("testmodule/test_a")[0]
+        n = self["root"].search(os.path.join("testmodule", "test_a"))[0]
         repr(n)
 
 

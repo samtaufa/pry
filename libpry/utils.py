@@ -1,4 +1,4 @@
-import os.path, fnmatch, struct, fcntl, termios, os
+import os.path, fnmatch, struct, os
 
 def summariseList(lst):
     """
@@ -108,10 +108,11 @@ def _splitSpec(spec):
 
 # begin nocover
 def terminalWidth():
+    width = None
     try:
+        import fcntl, termios
         cr = struct.unpack('hh', fcntl.ioctl(0, termios.TIOCGWINSZ, '1234'))
-    except IOError:
-        cr = None
-    if not cr:
-        return 80
-    return int(cr[1])
+        width = int(cr[1])
+    except (IOError, ImportError):
+        pass
+    return width or 80

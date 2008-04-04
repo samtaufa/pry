@@ -29,7 +29,7 @@ class File:
         else:
             common = len(os.path.commonprefix([base, self.path]))
             fname = self.path[common:]
-            if fname[0] == "/":
+            if fname[0] in os.path.sep:
                 fname = fname[1:]
             return fname
 
