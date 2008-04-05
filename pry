@@ -9,11 +9,6 @@ def main():
                 usage = "%prog [options] [testfilter]",
                 version="%prog 0.1",
             )
-    parser.add_option("-c", "--clear",
-                      action="store_true", dest="clear",
-                      help="Clear all .pyc and .pyo files in the project base"
-                           " and included paths before run."
-                    )
     parser.add_option("-l", "--list",
                       action="store_true", dest="list",
                       help="List all tests.")

@@ -15,16 +15,17 @@ Features
 Pry requires Python 2.5.2 or newer.
 """
 
+version = "0.2.1"
 
 setup(
         name = "pry",
-        version = "0.2",
+        version = version,
         description = "A unit testing framework and coverage engine.",
         long_description = long_description,
         author = "Aldo Cortesi",
         author_email = "aldo@nullcube.com",
-        url = "http://www.nullcube.com",
-        download_url="http://dev.nullcube.com/download/pry-0.2.tar.gz",
+        url = "http://dev.nullcube.com",
+        download_url="http://dev.nullcube.com/download/pry-%s.tar.gz"%version,
         packages = ["libpry"],
         scripts = ["pry"],
         classifiers = [

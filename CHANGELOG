@@ -1,0 +1,15 @@
+
+
+0.2.1
+=====
+
+commit f903f3d0c66701eae1cfa81c7173d95db120fbc7
+Author: Aldo Cortesi <aldo@nullcube.com>
+
+    Fix Windows compatibility.
+
+
+0.2
+===
+
+Initial release

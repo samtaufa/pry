@@ -8,7 +8,7 @@ ns.docTitle = "Pry Manual"
 ns.docMaintainer = "Aldo Cortesi"
 ns.docMaintainerEmail = "aldo@nullcube.com"
 ns.foot = "Copyright Nullcube 2008"
-ns.head = "<h1> Pry - @!this.title!@ </h1>"
+ns.head = "<h1> Pry 0.2.1 - @!this.title!@ </h1>"
 ns.sidebar = countershape.widgets.SiblingPageIndex(
                 '/index.html',
                 exclude=['countershape']
