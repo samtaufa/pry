@@ -21,7 +21,7 @@ class Expression:
     def show(self, glob, loc):
         try:
             return repr(eval(self.s, glob, loc))
-        except SyntaxError:
+        except SyntaxError, v:
             return "<could not be evaluated>"
 
     def __eq__(self, other):
@@ -54,9 +54,9 @@ class Explain:
             for i in list(tokenize.generate_tokens(_Wrap(expr))):
                 name, txt = tokenize.tok_name[i[0]], i[1]
                 start, end = i[2][1], i[3][1]
-                if name == "OP" and txt == "(":
+                if name == "OP" and (txt == "(" or txt == "["):
                     nest += 1
-                elif name == "OP" and txt == ")":
+                elif name == "OP" and (txt == ")" or txt == "]"):
                     nest -= 1
                 elif nest == 0:
                     if name == "OP" and txt in self._specialOps:

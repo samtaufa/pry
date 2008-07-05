@@ -82,6 +82,13 @@ class uExplain(libpry.AutoTree):
         assert not self.s.parseExpression("[a == b and c == d, foo")[0]
         assert not self.s.parseExpression("a == b and c == d, foo]")[0]
 
+    def test_list(self):
+        r, s = self.s.parseExpression('[0, 2]')
+        expected = [
+            explain.Expression('[0, 2]'),
+        ]
+        assert r == expected
+
     def test_str(self):
         r = explain.Explain(
                 "a == b and c == d, foo",
