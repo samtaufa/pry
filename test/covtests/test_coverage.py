@@ -1,4 +1,4 @@
-import os.path, sys, pprint
+import os.path, sys, pprint, imp
 import token, symbol
 import libpry
 import libpry.coverage
@@ -10,7 +10,7 @@ class uCoverage(libpry.AutoTree):
 
     def test_run(self):
         self.cov.start()
-        reload(testUnit.mymod)
+        imp.reload(testUnit.mymod)
         testUnit.mymod.run(1, 2)
         self.cov.stop()
         f = self.cov.fileDict[os.path.abspath("./testUnit/mymod.py")]
@@ -84,7 +84,7 @@ class uCoverage(libpry.AutoTree):
     def test_getStats(self):
         self.cov.start()
         import testUnit.getStats, testUnit.getRanges
-        reload(testUnit.getRanges)
+        imp.reload(testUnit.getRanges)
         testUnit.getStats.foo()
         testUnit.getRanges.foo()
         self.cov.stop()
@@ -114,7 +114,7 @@ class uCoverage(libpry.AutoTree):
     def test_getGlobalStats(self):
         mycov = libpry.coverage.Coverage("testUnit/getGlobalStats.py")
         mycov.start()
-        reload(testUnit.getGlobalStats)
+        imp.reload(testUnit.getGlobalStats)
         testUnit.getGlobalStats.foo()
         mycov.stop()
         expected = {

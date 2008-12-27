@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python3.0
 import sys
 import libpry
 
@@ -99,11 +99,11 @@ def main():
 
     if options.list:
         r.printStructure()
-        print "Total: %s"%len(r.tests())
+        print("Total: %s"%len(r.tests()))
         sys.exit()
     elif options.debug:
         r.dump()
-        print "Total: %s"%len(r.tests())
+        print("Total: %s"%len(r.tests()))
         sys.exit()
     else:
         r._run(output, options.benchmark)

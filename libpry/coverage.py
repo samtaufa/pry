@@ -1,6 +1,6 @@
 import parser, token, symbol, copy, getopt, types
 import time, os.path, sys, tokenize, re
-import utils
+from . import utils
 
 _coverRe = re.compile("\s*#\s*(begin|end)\s+nocover", re.I)
 class File:
@@ -14,11 +14,16 @@ class File:
             self.executable = lines - self.exclusions
             self.executed = set()
 
-    def __cmp__(self, other):
-        c = cmp(other.percentage, self.percentage)
-        if c == 0:
-            return cmp(self.path, other.path)
-        return c
+    def __lt__(self, other):
+        if other.percentage == self.percentage:
+            if self.path > other.path:
+                return False
+            else:
+                return True
+        elif self.percentage < other.percentage:
+            return True
+        else:
+            return False
 
     def nicePath(self, base):
         """
@@ -85,10 +90,10 @@ class File:
         # For information on how co_lnotab is decoded, see the comment around line
         # 470 in Objects/codeobject.c in the Python project.
         lst = []
-        offsets = zip(
-                [ord(c) for c in lnotab[0::2]],
-                [ord(c) for c in lnotab[1::2]],
-            )
+        offsets = list(zip(
+                lnotab[0::2],
+                lnotab[1::2],
+            ))
         if offsets:
             cum = 0
             for byte, line in offsets:
@@ -151,7 +156,7 @@ class File:
                             i,
                             filename
                         )
-                    raise ValueError, s
+                    raise ValueError(s)
             else:
                 if nocover:
                     s.add(i+1)
@@ -239,7 +244,7 @@ class Coverage:
         """
         statementsRun = 0
         allStatements = 0
-        for i in self.fileDict.values():
+        for i in list(self.fileDict.values()):
             statementsRun += i.numExecuted
             allStatements += i.numExecutable
         if allStatements == 0:
@@ -257,7 +262,7 @@ class Coverage:
             "[tot ] [run ] [percent]\n",
             "-----------------------\n",
         ]
-        files = self.fileDict.values()
+        files = list(self.fileDict.values())
         files.sort()
         for f in files:
             lst.append(

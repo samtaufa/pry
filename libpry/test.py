@@ -1,7 +1,6 @@
-
-import sys, time, traceback, os, fnmatch, config, cProfile, pstats, cStringIO
+import sys, time, traceback, os, fnmatch, cProfile, pstats, io, imp
 import linecache, shutil, tempfile
-import _tinytree, explain, coverage, utils
+from . import _tinytree, explain, coverage, utils, config
 
 _TestGlob = "test_*.py"
 
@@ -22,8 +21,8 @@ def raises(exc, obj, *args, **kwargs):
         :kwargs Arguments to be passed to the callable.
     """
     try:
-        apply(obj, args, kwargs)
-    except Exception, v:
+        obj(*args, **kwargs)
+    except Exception as v:
         if utils.isStringLike(exc):
             if exc.lower() in str(v).lower():
                 return
@@ -330,12 +329,12 @@ class _TestBase(_tinytree.Tree):
             Retrieve an item from the tree namespace. Keys are looked up in
             this node, and on all nodes to the root.
         """
-        if self._ns.has_key(key):
+        if key in self._ns:
             return self._ns[key]
         elif self.parent:
             return self.parent.__getitem__(key)
         else:
-            raise KeyError, "No such data item: %s"%key
+            raise KeyError("No such data item: %s"%key)
 
     def __setitem__(self, key, value):
         """
@@ -355,13 +354,13 @@ class _TestBase(_tinytree.Tree):
             prof = cProfile.Profile()
         try:
             start = time.time()
-            for i in xrange(repeat):
+            for i in range(repeat):
                 if profile:
                     r = prof.runcall(meth, *args, **kwargs)
                 else:
                     r = meth(*args, **kwargs)
             stop = time.time()
-        except Exception, e:
+        except Exception as e:
             setattr(
                 dstObj, name + "State",
                 _Error(
@@ -372,7 +371,7 @@ class _TestBase(_tinytree.Tree):
             return True
         if r is not _NOTRUN:
             if profile:
-                pstream = cStringIO.StringIO()
+                pstream = io.StringIO()
                 dstObj.profStats = pstats.Stats(prof, stream=pstream)
                 dstObj.profStats.sort_stats(profile)
             setattr(dstObj, name + "State", _OK(dstObj, stop-start))
@@ -559,8 +558,8 @@ class _TestBase(_tinytree.Tree):
             if i.name:
                 parts = i.fullPathParts()
                 if len(parts) > 1:
-                    print >> outf, "    "*(len(parts)-1),
-                print >> outf, i.name
+                    print("    "*(len(parts)-1), end=' ', file=outf)
+                print(i.name, file=outf)
 
 #Flag object for TestContainer
 AUTO = object()
@@ -760,17 +759,17 @@ class _FileNode(TestContainer):
         # create a new suite of class instances, and break our code.
         # begin nocover
         if magic:
-            for k in sys.modules.keys():
+            for k in list(sys.modules.keys()):
                 if "libpry" in k and sys.modules[k]:
                     n = sys.modules[k].__file__
                     if n.endswith("pyc"):
-                        execfile(n[:-1])
+                        exec(open(n[:-1]).read())
                     elif n.endswith("py"):
-                        execfile(n)
+                        exec(open(n).read())
         # end nocover
         # Force a reload to stop Python caching modules that happen to have 
         # the same name
-        reload(m)
+        imp.reload(m)
         if hasattr(m, "tests"):
             self.addChildrenFromList(m.tests)
 

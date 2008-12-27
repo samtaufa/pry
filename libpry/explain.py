@@ -21,7 +21,7 @@ class Expression:
     def show(self, glob, loc):
         try:
             return repr(eval(self.s, glob, loc))
-        except SyntaxError, v:
+        except SyntaxError as v:
             return "<could not be evaluated>"
 
     def __eq__(self, other):

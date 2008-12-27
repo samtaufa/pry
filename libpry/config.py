@@ -10,31 +10,31 @@
     The special _magic flag is needed to allow pry to run coverage analysis on
     itsef.
 """
-import ConfigParser, cStringIO, os.path
+import configparser, io, os.path
 
 class Config:
     _valid = set(["base", "coverage", "exclude", "_magic"])
     def __init__(self, path):
         self.path = path
         if os.path.isfile(path):
-            self.c = ConfigParser.SafeConfigParser()
+            self.c = configparser.SafeConfigParser()
             data = open(path).read()
             # You know, Python is my favourite language and all, but its
             # standard library can be utterly moronic
-            io = cStringIO.StringIO()
-            io.write("[pry]\n")
-            io.write(data)
-            io.reset()
-            self.c.readfp(io)
+            sio = io.StringIO()
+            sio.write("[pry]\n")
+            sio.write(data)
+            sio.seek(0, 0)
+            self.c.readfp(sio)
             options = set(self.c.options("pry"))
             if not self._valid.issuperset(options):
                 bad = options - self._valid
                 bad = ",".join(list(bad))
-                raise ValueError, "Unknown options in config file: %s"%bad
+                raise ValueError("Unknown options in config file: %s"%bad)
             items = dict(self.c.items("pry"))
             self.base = items.get("base", "..").strip()
             self.coverage = items.get("coverage", "..").strip()
-            if items.has_key("_magic"):
+            if "_magic" in items:
                 self._magic = True
             else:
                 self._magic = False

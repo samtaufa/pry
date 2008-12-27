@@ -1,1 +1,1 @@
-import mymod
+from . import mymod

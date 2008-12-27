@@ -1,4 +1,4 @@
-import fnmatch, cStringIO, os, shutil
+import fnmatch, io, os, shutil, sys
 import libpry.test
 
 zero = libpry.test._Output(libpry.test._RootNode(False, None), 0)
@@ -88,12 +88,12 @@ class TSetupAllCheck(_SetupAllCheck):
 
 class TSetupAllError(_SetupAllCheck):
     def setUpAll(self):
-        raise ValueError, "test"
+        raise ValueError("test")
 
 
 class TTearDownAllError(_SetupAllCheck):
     def tearDownAll(self):
-        raise ValueError, "test"
+        raise ValueError("test")
 
 
 class TTeardownAllCheck(_SetupAllCheck):
@@ -235,7 +235,7 @@ class uAutoTree(libpry.test.AutoTree):
         assert self.t.count() == c
 
     def test_printStructure(self):
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         self.t.printStructure(s)
         assert s.getvalue()
 
@@ -443,13 +443,12 @@ class u_RootNode(libpry.test.AutoTree):
 
     def test_errFinal(self):
         try:
-            raise ValueError
+            raise ValueError()
         except:
-            pass
-        r = libpry.test._RootNode(False, None)
-        o = libpry.test._OutputOne(r)
-        r.goState = libpry.test._Error(r, "")
-        o.final(r)
+            r = libpry.test._RootNode(False, None)
+            o = libpry.test._OutputOne(r)
+            r.goState = libpry.test._Error(r, "")
+            o.final(r)
 
 
 class FullTree(libpry.test.AutoTree):

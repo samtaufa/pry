@@ -7,7 +7,7 @@ def foo(on):
         1
     try:
         if on:
-            raise ValueError, "foo" 
+            raise ValueError("foo") 
     except:
         1
         1

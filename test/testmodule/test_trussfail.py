@@ -12,26 +12,26 @@ class _Test(libpry.test.AutoTree):
 
 class uSetupAll(_Test):
     def setUpAll(self):
-        raise ValueError, "This is an intentional error."
+        raise ValueError("This is an intentional error.")
 
 
 class uTearDownAll(_Test):
     def tearDownAll(self):
-        raise ValueError, "This is an intentional error."
+        raise ValueError("This is an intentional error.")
 
 
 class uSetup(_Test):
     def setUp(self):
-        raise ValueError, "This is an intentional error."
+        raise ValueError("This is an intentional error.")
 
 
 class uTearDown(_Test):
     def tearDown(self):
-        raise ValueError, "This is an intentional error."
+        raise ValueError("This is an intentional error.")
 
 class uTearDownOnly(libpry.test.AutoTree):
     def tearDown(self):
-        raise ValueError, "This is an intentional error."
+        raise ValueError("This is an intentional error.")
 
     def test_one(self):
         pass

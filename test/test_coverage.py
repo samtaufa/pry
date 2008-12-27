@@ -9,32 +9,29 @@ class uFile(libpry.AutoTree):
         f = libpry.coverage.File(None)
         offsets = [
             #byte    line
-            chr(0), chr(1),
-            chr(1), chr(1),
-            chr(7), chr(255),
-            chr(0), chr(10),
-            chr(1), chr(1),
+            0, 1,
+            1, 1,
+            7, 255,
+            0, 10,
+            1, 1,
         ]
-        offets = "".join(offsets)
         expected = [1, 1, 265, 1]
         assert f._extractLineOffsets(offsets) == expected
 
         offsets = [
             #byte    line
-            chr(0), chr(255),
-            chr(0), chr(10),
-            chr(1), chr(1),
+            0, 255,
+            0, 10,
+            1, 1,
         ]
-        offets = "".join(offsets)
         expected = [265, 1]
         assert f._extractLineOffsets(offsets) == expected
 
         offsets = [
             #byte    line
-            chr(1), chr(1),
-            chr(0), chr(255),
+            1, 1,
+            0, 255,
         ]
-        offets = "".join(offsets)
         expected = [1, 255]
         assert f._extractLineOffsets(offsets) == expected
 

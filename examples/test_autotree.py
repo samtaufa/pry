@@ -2,22 +2,22 @@ import libpry
 
 class MyContainer(libpry.AutoTree):
     def setUpAll(self):
-        print "setUpAll"
+        print("setUpAll")
 
     def tearDownAll(self):
-        print "tearDownAll"
+        print("tearDownAll")
 
     def setUp(self):
-        print "\tsetUp"
+        print("\tsetUp")
 
     def tearDown(self):
-        print "\ttearDown"
+        print("\ttearDown")
 
     def test_one(self):
-        print "\t\t%s..."%self.name
+        print("\t\t%s..."%self.name)
 
     def test_two(self):
-        print "\t\t%s..."%self.name
+        print("\t\t%s..."%self.name)
 
 tests = [
     MyContainer()
