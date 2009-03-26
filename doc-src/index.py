@@ -4,17 +4,18 @@ import countershape.layout
 import countershape.grok
 from countershape.doc import *
 
+this.layout = countershape.layout.Layout("_layout.html")
+this.markdown = "rst"
 ns.docTitle = "Pry Manual"
 ns.docMaintainer = "Aldo Cortesi"
 ns.docMaintainerEmail = "aldo@nullcube.com"
 ns.foot = "Copyright Nullcube 2008"
-ns.head = "<h1> Pry 0.2.1 - @!this.title!@ </h1>"
+ns.head = countershape.template.File(None, "_header.html")
 ns.sidebar = countershape.widgets.SiblingPageIndex(
                 '/index.html',
                 exclude=['countershape']
             )
-this.layout = countershape.layout.TwoPane("yui-t2", "doc3")
-this.titlePrefix = "Pry Manual - "
+ns.cs = countershape.grok.grok("../libpry")
 
 # This should be factored out into a library and tested...
 class Examples:
@@ -58,12 +59,12 @@ ns.libpry = countershape.grok.grok("../libpry")
 
 pages = [
     Page("index.html", "Introduction"),
+    Page("cli.html",   "Command-line"),
     Page("tests.html", "Writing Tests"),
     Directory("tests"),
     Page("coverage.html",   "Coverage"),
     Directory("coverage"),
     Page("profiling.html",   "Profiling"),
-    Page("cli.html",   "The pry tool"),
     Page("api.html",   "API"),
     Page("admin.html", "Administrivia")
 ]

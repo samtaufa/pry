@@ -1,8 +1,13 @@
 
+Overview
+========
+
+The examples in this section are available with the __pry__ source distribution, 
+in the _examples_ directory. Within this directory we can run __pry__ with the
+_sample source code_ as the argument to see test results:
+
 A basic example
 ===============
-
-$!examples.py("examples/test_basic.py")!$
 
 This example should look familiar to anyone who has used the built-in Python
 __unittest__ module. The main points to note are:
@@ -14,7 +19,7 @@ __unittest__ module. The main points to note are:
     tests.
 
     * __pry__ is a tree-based test framework. __AutoTree__ turns methods with
-    names of the form "test_*" into test nodes automatically. 
+    names of the form "test_*" into test nodes automatically.
 
     * Unlike the built-in __unittest__ module, __pry__ does _not_ automatically
     instantiate test suites. Instead, they need to be instantiated manually and
@@ -24,11 +29,26 @@ __unittest__ module. The main points to note are:
     Assertion errors are caught, and the failing expression is parsed and
     re-evaluated to give an informative error message.
 
+$!examples.py("examples/test_basic.py")!$
+
+Remember:
+<li>libpry.AutoTree</li>
+<li>def test_mynameXYZ</li>
+<li> the Test classes are specified in a _test_ list at the end of the file
+<!--(block | pySyntax)-->
+        tests = [
+                TestClass()
+        ]
+<!--(end)-->
+</li>
+
+
 
 Running the tests
 =================
 
-From the <span>examples</span> in the __pry__ distribution, we can run the
+From the <span>examples</span> in the __pry__ distribution, and
+Command Line documentation, we can run the
 tests as follows:
 
 $!examples.pry("examples", "test_basic.py")!$
