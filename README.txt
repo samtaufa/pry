@@ -2,22 +2,22 @@
 Introduction
 ========
 
-pry is __A unit testing framework for Python.__
+pry is *A unit testing framework for Python*.
 
-Documentation is available at <a href="http://dev.nullcube.com">http://dev.nullcube.com</a>
+Documentation is available at http://dev.nullcube.com
 
-Source is hosted at <a href="http://github.com/cortesi/pry">http://github.com/cortesi/pry</a>
+Source is hosted at http://github.com/cortesi/pry
 
 Features
 ========
 
-    * Powerful <a href="cli.html">command-line interface</a>
+    * Powerful *command-line interface*
 
-    * Assertion-based <a href="tests.html">tests</a> - no ugly failUnless*, failIf*, etc. methods
+    * Assertion-based *tests - no ugly failUnless*, failIf*, etc. methods
 
-    * <a href="tests/tree.html">Tree-based test structure</a> for better fixture management
+    * Tree-based test structure for better fixture management
 
-    * Built-in <a href="coverage.html">coverage analysis</a> and <a href="profiling.html">profiling</a>
+    * Built-in *coverage analysis* and *profiling*
 
     * No implicit instantiation of test suites
 
@@ -39,5 +39,5 @@ Documentation
 Documentation and a basic guide with sample source code is provided
 with the source distribution.
 
-The documentation is at  _pry/doc-src_ and the example files
-at _pry/examples_.
+The documentation is at  ./doc-src and the example files
+at ./examples.
