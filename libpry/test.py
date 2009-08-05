@@ -45,22 +45,6 @@ def raises(exc, obj, *args, **kwargs):
     raise AssertionError("No exception raised.")
 
 
-class TmpDirMixin:
-    """
-        A utility mixin that creates a temporary directory during setup, and
-        removes it during teardown. The directory path is inserted into the
-        test namespace as follows:
-            
-            self["tmpdir"] = path
-    """
-    def setUp(self):
-        self["tmpdir"] = tempfile.mkdtemp()
-
-    def tearDown(self):
-        if os.path.isdir(self["tmpdir"]):
-            shutil.rmtree(self["tmpdir"])
-
-
 class _Error:
     def __init__(self, node, msg):
         self.node, self.msg = node, msg
@@ -631,13 +615,28 @@ class TestContainer(_TestBase):
                     self.tearDownState,
                 ]
 
+    def tmpdir(self):
+        f = tempfile.mkdtemp()
+        self._tmpDirs.append(f)
+        return f
+
+    def _rmdirs(self, l):
+        for i in l:
+            if os.path.isdir(i):
+                shutil.rmtree(i)
+        l[:] = []
+
     def _run(self, output, repeat, profile):
         """
             Run the tests contained in this suite.
         """
+        # Temp dirs requested during setUpAll, and during a specific test
+        allTmpDirs, oneTmpDirs = [], []
+        self._tmpDirs = allTmpDirs
         if self._runCallable(self.setUpAll, self, "setUpAll", 1, None):
             output.setUpAllError(self)
             return
+        self._tmpDirs = oneTmpDirs
         for i in self.children:
             output.nodePre(i)
 
@@ -655,12 +654,14 @@ class TestContainer(_TestBase):
                 output.tearDownError(i)
                 output.nodePost(i)
                 return
+            self._rmdirs(oneTmpDirs)
 
             output.nodePost(i)
 
         if self._runCallable(self.tearDownAll, self, "tearDownAll", 1, None):
             output.tearDownAllError(self)
             return
+        self._rmdirs(allTmpDirs)
 
 
 class AutoTree(TestContainer):

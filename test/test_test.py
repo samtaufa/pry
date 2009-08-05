@@ -30,13 +30,22 @@ class uRaises(libpry.AutoTree):
         )
 
 
-class uTmpDirMixin(libpry.test.TmpDirMixin, libpry.test.AutoTree):
-    def tearDown(self):
-        libpry.test.TmpDirMixin.tearDown(self)
-        assert not os.path.isdir(self["tmpdir"])
+class uTmpDir(libpry.test.AutoTree):
+    def setUpAll(self):
+        self.d = []
+        self.d.append(self.tmpdir())
+
+    def setUp(self):
+        self.d.append(self.tmpdir())
+
+    def tearDownAll(self):
+        assert os.path.isdir(self.d[0])
+        assert not os.path.isdir(self.d[1])
 
     def test_check(self):
-        assert os.path.isdir(self["tmpdir"])
+        assert len(self.d) == 2
+        assert os.path.isdir(self.d[0])
+        assert os.path.isdir(self.d[1])
 
 
 class TSetupCheckRoot(libpry.test.AutoTree):
@@ -570,5 +579,5 @@ tests = [
     uAutoTree(),
     u_Output(),
     uCallableNode(),
-    uTmpDirMixin(),
+    uTmpDir(),
 ]
