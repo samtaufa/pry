@@ -306,10 +306,6 @@ class _Output:
 
 
 class _TestBase(_tinytree.Tree):
-    """
-        Automatically turns methods or arbitrary callables of the form test_*
-        into Tests.
-    """
     #grok:include
     # The name of this node. Names should not contain periods or spaces.
     name = None
