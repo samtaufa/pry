@@ -15,7 +15,7 @@ ns.sidebar = countershape.widgets.SiblingPageIndex(
                 '/index.html',
                 exclude=['countershape']
             )
-ns.cs = countershape.grok.grok("../libpry")
+ns.cs = countershape.grok.parse("../libpry")
 
 # This should be factored out into a library and tested...
 class Examples:
@@ -55,7 +55,7 @@ class Examples:
     
 
 ns.examples = Examples("..")
-ns.libpry = countershape.grok.grok("../libpry")
+ns.libpry = countershape.grok.parse("../libpry")
 
 pages = [
     Page("index.html", "Introduction"),
