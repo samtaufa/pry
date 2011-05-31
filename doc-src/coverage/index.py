@@ -1,6 +1,6 @@
 from countershape.doc import *
 
 pages = [
-    Page("dotpry.html",  ".pry config file"),
-    Page("annotations.html",  "Code Annotation"),
+    Page("dotpry.mdtext",  ".pry config file"),
+    Page("annotations.mdtext",  "Code Annotation"),
 ]

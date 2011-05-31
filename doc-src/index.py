@@ -5,7 +5,8 @@ import countershape.grok
 from countershape.doc import *
 
 this.layout = countershape.layout.Layout("_layout.html")
-this.markdown = "rst"
+this.markdown = markup.Markdown(extras=["code-friendly"])
+
 ns.docTitle = "Pry Manual"
 ns.docMaintainer = "Aldo Cortesi"
 ns.docMaintainerEmail = "aldo@nullcube.com"
@@ -29,21 +30,15 @@ class Examples:
         post = "<div class=\"fname\">(%s)</div>"%path
         return f + post
 
-    def py(self, path, **kwargs):
-        return self._wrap(ns.pySyntax.withConf(**kwargs), path)
-
     def _preProc(self, f):
         return "<pre class=\"output\">%s</pre>"%f
-
-    def plain(self, path):
-        return self._wrap(self._preProc, path)
 
     def pry(self, path, args):
         cur = os.getcwd()
         os.chdir(os.path.join(self.d, path))
-        prog = os.path.join(self.d, "pry")
+        prog = "pry"
         pipe = subprocess.Popen(
-                    "%s "%prog + args,
+                    "%s "% prog + args,
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE
@@ -53,18 +48,25 @@ class Examples:
         content = "> pry %s\n"%args + pipe.read()
         return self._preProc(content)
     
+rootPath = os.path.abspath(".")
+def showsrc(path):        
+    return readFrom(os.path.join(rootPath, path))
+
+ns.showsrc = showsrc
 
 ns.examples = Examples("..")
 ns.libpry = countershape.grok.parse("../libpry")
 
 pages = [
-    Page("index.html", "Introduction"),
-    Page("cli.html",   "Command-line"),
-    Page("tests.html", "Writing Tests"),
+    Page("index.mdtext", "Introduction"),
+    Page("cli.mdtext",   "Command-line"),
+    Page("tests.mdtext", "Writing Tests"),
     Directory("tests"),
-    Page("coverage.html",   "Coverage"),
+    
+    Page("coverage.mdtext",   "Coverage"),
     Directory("coverage"),
-    Page("profiling.html",   "Profiling"),
-    Page("api.html",   "API"),
-    Page("admin.html", "Administrivia")
+    
+    Page("profiling.mdtext",   "Profiling"),
+    Page("api.mdtext",   "API"),
+    Page("admin.mdtext", "Administrivia")
 ]

@@ -1,6 +1,6 @@
 from countershape.doc import *
 
 pages = [
-    Page("tree.html",  "Test Trees"),
-    Page("autotree.html",  "AutoTree"),
+    Page("tree.mdtext",  "Test Trees"),
+    Page("autotree.mdtext",  "AutoTree"),
 ]
