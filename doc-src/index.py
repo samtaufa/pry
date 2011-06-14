@@ -1,7 +1,6 @@
 import os, os.path, subprocess
 import countershape.widgets
 import countershape.layout
-import countershape.grok
 from countershape.doc import *
 
 this.layout = countershape.layout.Layout("_layout.html")
@@ -16,7 +15,6 @@ ns.sidebar = countershape.widgets.SiblingPageIndex(
                 '/index.html',
                 exclude=['countershape']
             )
-ns.cs = countershape.grok.parse("../libpry")
 
 # This should be factored out into a library and tested...
 class Examples:
@@ -55,7 +53,6 @@ def showsrc(path):
 ns.showsrc = showsrc
 
 ns.examples = Examples("..")
-ns.libpry = countershape.grok.parse("../libpry")
 
 pages = [
     Page("index.mdtext", "Introduction"),
@@ -67,6 +64,7 @@ pages = [
     Directory("coverage"),
     
     Page("profiling.mdtext",   "Profiling"),
-    Page("api.mdtext",   "API"),
+    PythonModule("../libpry", 
+        title="Source"),
     Page("admin.mdtext", "Administrivia")
 ]
