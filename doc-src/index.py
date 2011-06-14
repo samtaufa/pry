@@ -55,16 +55,16 @@ ns.showsrc = showsrc
 ns.examples = Examples("..")
 
 pages = [
-    Page("index.mdtext", "Introduction"),
-    Page("cli.mdtext",   "Command-line"),
-    Page("tests.mdtext", "Writing Tests"),
+    Page("index.md", "Introduction"),
+    Page("cli.md",   "Command-line"),
+    Page("tests.md", "Writing Tests"),
     Directory("tests"),
     
-    Page("coverage.mdtext",   "Coverage"),
+    Page("coverage.md",   "Coverage"),
     Directory("coverage"),
     
-    Page("profiling.mdtext",   "Profiling"),
+    Page("profiling.md",   "Profiling"),
     PythonModule("../libpry", 
         title="Source"),
-    Page("admin.mdtext", "Administrivia")
+    Page("admin.md", "Administrivia")
 ]
