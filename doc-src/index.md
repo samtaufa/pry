@@ -12,7 +12,7 @@ Features
 ========
 
 * Powerful <a href="cli.html">command-line interface</a>
-* Assertion-based <a href="tests.html">tests</a> - no ugly failUnless*, failIf*, etc. methods
+* Assertion-based <a href="tests.html">tests</a> - no ugly failUnless\*, failIf\*, etc. methods
 * <a href="tests/tree.html">Tree-based test structure</a> for better fixture management
 * Built-in <a href="coverage.html">coverage analysis</a> and <a href="profiling.html">profiling</a>
 * No implicit instantiation of test suites
