@@ -4,7 +4,7 @@ import countershape.layout
 from countershape.doc import *
 
 this.layout = countershape.layout.Layout("_layout.html")
-this.markdown = markup.Markdown(extras=["code-friendly"])
+this.markdown = markup.Markdown( extras=["code-friendly"] )
 
 ns.docTitle = "Pry Manual"
 ns.docMaintainer = "Aldo Cortesi"
